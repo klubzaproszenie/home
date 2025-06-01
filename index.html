@@ -18,7 +18,7 @@
         }
 
         html, body {
-            cursor: url('cursor1.png') 16 16, auto; /* zakładamy hotspot w środku 32×32 */
+            cursor: url('cursor1.png') 16 16, auto; /* hotspot w środku 32×32 */
         }
 
         body {
@@ -39,7 +39,7 @@
 
         .book {
             width: 500px;
-            height: 563px; /* proporcja 1.1267 */
+            height: 563px; /* proporcja 500×(338/300) ≈ 563 */
             position: relative;
             transform-style: preserve-3d;
             transform: rotateX(5deg);
@@ -66,7 +66,7 @@
             justify-content: center;
             align-items: center;
             border-radius: 10px;
-            z-index: 10;                /* strona 1 nad menu, gdy zamknięta */
+            z-index: 3;                /* strona 1 nad menu, gdy zamknięta */
         }
 
         .page1-logo {
@@ -93,17 +93,17 @@
         }
 
         .page1 {
-            z-index: 3;
             transform-origin: left center;
             transition: transform 0.6s ease-out;
         }
 
         .page1.flipped {
             transform: rotateY(-180deg);
+            z-index: 1; /* po otwarciu schodzimy niżej, by odsłonić menu */
         }
 
         .page3 {
-            z-index: 1;
+            z-index: 2; /* menu jest z-index 2 */
             transform: translateZ(-4px);
         }
 
@@ -116,7 +116,7 @@
             display: flex;
             flex-direction: column;
             gap: 20px;
-            z-index: 2;     /* poniżej okładki (z-index 3), powyżej tła */
+            z-index: 2;     /* menu na poziomie 2 */
             align-items: center;
         }
 
@@ -135,28 +135,12 @@
             text-decoration: underline;
         }
 
-        /* Przyciski zamykania: zaokrąglone rogi i delikatne tło */
-        .corner-grab, .corner-grab2 {
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 45px;
-            height: 45px;
-            cursor: grab;
-            z-index: 10;
-            border-radius: 0 10px 0 60px;
-            background: rgba(0,0,0,0.05);
-            opacity: 0;
-            transition: opacity 0.3s ease;
+        /* Przyciski zamykania (można usunąć, bo można łapać całą stronę) */
+        .corner-grab {
+            display: none;
         }
-
-        .corner-grab:hover, .corner-grab2:hover {
-            opacity: 1;
-        }
-
-        .corner-grab.active, .corner-grab2.active {
-            cursor: grabbing;
-            opacity: 0.7;
+        .corner-grab2 {
+            display: none;
         }
 
         .music-particles {
@@ -191,14 +175,10 @@
         @media (max-width: 800px) {
             .book {
                 width: 300px;
-                height: 338px;
+                height: 338px; /* proporcja 300×(338/300) */
             }
             .btn {
                 font-size: 28px;
-            }
-            .corner-grab, .corner-grab2 {
-                width: 35px;
-                height: 35px;
             }
             .particle {
                 font-size: 40px;
@@ -211,18 +191,16 @@
         <div class="book" id="book">
             <!-- Strona 1 (okładka) z logo w centrum -->
             <div class="page page1" id="page1">
-                <div class="corner-grab" id="cornerGrab"></div>
                 <div class="page-front">
                     <img src="logo.png" alt="Logo" class="page1-logo">
                 </div>
                 <div class="page-back" id="page1Back"></div>
             </div>
 
-            <!-- Strona 3: druga strona książeczki, na froncie przycisk zamykania -->
+            <!-- Strona 3: druga strona książeczki, widoczna po otwarciu -->
             <div class="page page3" id="page3">
                 <div class="page-front">
-                    <div class="corner-grab2" id="cornerGrab2"></div>
-                    <!-- Dodatkowa treść drugiej strony -->
+                    <!-- Dodatkowa treść drugiej strony, jeśli potrzeba -->
                 </div>
             </div>
 
@@ -248,9 +226,6 @@
         audio.loop = true;
 
         const page1 = document.getElementById('page1');
-        const page1Back = document.getElementById('page1Back');
-        const cornerGrab = document.getElementById('cornerGrab');
-        const cornerGrab2 = document.getElementById('cornerGrab2');
         const buttonsContainer = document.getElementById('buttonsContainer');
         const musicParticles = document.getElementById('musicParticles');
         const book = document.getElementById('book');
@@ -301,22 +276,14 @@
         }, { once: true });
 
         // Obsługa przeciągania front i back pierwszej strony – otwarcie i zamknięcie
-        function addDragListeners(element) {
-            element.addEventListener('mousedown', startDrag);
-            element.addEventListener('touchstart', handleTouchStart, { passive: false });
-        }
-        addDragListeners(cornerGrab);
-        addDragListeners(page1);
-        addDragListeners(cornerGrab2);
-        addDragListeners(page1Back);
+        page1.addEventListener('mousedown', startDrag);
+        page1.addEventListener('touchstart', handleTouchStart, { passive: false });
 
         function startDrag(e) {
             e.preventDefault();
-            const isCornerGrabTarget = e.target === cornerGrab || e.target === cornerGrab2;
-            const isPage1Element = e.target.closest('.page1') || e.target.closest('#page1Back');
-            const clickedOnButton = e.target.closest('.btn');
-            if (clickedOnButton) return;
-            if (!isCornerGrabTarget && !isPage1Element) return;
+            // tylko jeśli klikamy na page1
+            const isPage1 = e.target.closest('.page1');
+            if (!isPage1) return;
             isDragging = true;
             startX = (e.type === 'touchstart') ? e.touches[0].clientX : e.clientX;
             page1.classList.add('dragging');
@@ -380,6 +347,8 @@
             currentRotation = -180;
             page1.classList.add('flipped');
             page1.style.transform = 'rotateY(-180deg)';
+            // odsunięcie z-index, żeby odsłonić menu
+            page1.style.zIndex = '1';
             if (permissionGranted) {
                 audio.currentTime = 0;
                 audio.play();
@@ -392,6 +361,7 @@
             currentRotation = 0;
             page1.classList.remove('flipped');
             page1.style.transform = 'rotateY(0deg)';
+            page1.style.zIndex = '3'; // przywróć z-index nad menu
             audio.pause();
             stopMusicParticles();
         }
