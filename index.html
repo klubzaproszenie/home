@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interaktywna 3D Książeczka</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;600&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'EB Garamond', serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .book-container {
+            perspective: 1200px;
+            transform-style: preserve-3d;
+        }
+
+        .book {
+            width: 400px;
+            height: 450px;
+            position: relative;
+            transform-style: preserve-3d;
+            transform: rotateX(5deg);
+        }
+
+        .page {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 3px;
+            cursor: grab;
+            transform-style: preserve-3d;
+            backface-visibility: hidden;
+        }
+
+        .page.dragging {
+            cursor: grabbing;
+            z-index: 1000;
+        }
+
+        .page-front, .page-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: white;
+            border-radius: 3px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            color: #333;
+            text-align: center;
+            padding: 20px;
+            background-size: cover;
+            background-position: center;
+            border: 1px solid #ddd;
+        }
+
+        .page-back {
+            transform: rotateY(180deg);
+        }
+
+        .page1 {
+            z-index: 3;
+            transform-origin: left center;
+            transition: transform 0.6s ease-out;
+        }
+
+        .page1.flipped {
+            transform: rotateY(-180deg);
+        }
+
+        .page2 {
+            z-index: 2;
+            transform: translateZ(-2px);
+        }
+
+        .page3 {
+            z-index: 1;
+            transform: translateZ(-4px);
+        }
+
+        .corner-grab {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 60px;
+            height: 60px;
+            cursor: grab;
+            z-index: 10;
+            border-radius: 0 3px 0 60px;
+            background: rgba(0,0,0,0.05);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .corner-grab:hover {
+            opacity: 1;
+        }
+
+        .corner-grab.active {
+            cursor: grabbing;
+            opacity: 0.7;
+        }
+
+        .buttons-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            z-index: 5;
+            align-items: center;
+        }
+
+        .buttons-container.visible {
+            opacity: 1;
+        }
+
+        .btn {
+            background: none;
+            border: none;
+            font-family: 'EB Garamond', serif;
+            font-size: 48px;
+            color: #333;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            color: #000;
+            text-decoration: underline;
+        }
+
+        .page-placeholder {
+            background: linear-gradient(45deg, #f8f8f8, #f0f0f0);
+        }
+
+        .music-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .particle {
+            position: absolute;
+            font-size: 20px;
+            opacity: 0;
+            animation: float-up 3s ease-out forwards;
+        }
+
+        @keyframes float-up {
+            0% {
+                opacity: 1;
+                transform: translateY(0) rotate(0deg);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-100px) rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="book-container">
+        <div class="book" id="book">
+            <!-- Strona 1 (okładka) -->
+            <div class="page page1" id="page1">
+                <div class="corner-grab" id="cornerGrab"></div>
+                <div class="page-front page-placeholder"></div>
+                <div class="page-back page-placeholder"></div>
+            </div>
+
+            <!-- Strona 3 (z przyciskami) -->
+            <div class="page page3" id="page3">
+                <div class="page-front page-placeholder"></div>
+            </div>
+
+            <!-- Przyciski widoczne po przewróceniu -->
+            <div class="buttons-container" id="buttonsContainer">
+                <button class="btn" onclick="handleButtonClick('archive')">Archive</button>
+                <button class="btn" onclick="handleButtonClick('info')">Info</button>
+                <button class="btn" onclick="handleButtonClick('about')">About</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="music-particles" id="musicParticles"></div>
+
+    <script>
+        let isDragging = false;
+        let startX = 0;
+        let currentRotation = 0;
+        let isFlipped = false;
+        let musicPlaying = false;
+        let particleInterval;
+
+        const page1 = document.getElementById('page1');
+        const cornerGrab = document.getElementById('cornerGrab');
+        const buttonsContainer = document.getElementById('buttonsContainer');
+        const musicParticles = document.getElementById('musicParticles');
+        const book = document.getElementById('book');
+
+        // Audio context
+        let audioContext;
+        let oscillator;
+
+        function initAudio() {
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            } catch (e) {
+                console.log('Audio context not supported');
+            }
+        }
+
+        function playMusic() {
+            if (!audioContext) return;
+            if (musicPlaying) return;
+            
+            oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(660, audioContext.currentTime + 2);
+            
+            gainNode.gain.setValueAtTime(0.05, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 4);
+            
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 4);
+            
+            musicPlaying = true;
+            startMusicParticles();
+            
+            setTimeout(() => {
+                musicPlaying = false;
+                stopMusicParticles();
+            }, 4000);
+        }
+
+        function stopMusic() {
+            if (oscillator) {
+                oscillator.stop();
+                oscillator = null;
+            }
+            musicPlaying = false;
+            stopMusicParticles();
+        }
+
+        function startMusicParticles() {
+            const bookRect = book.getBoundingClientRect();
+            const bookCenterX = bookRect.left + bookRect.width / 2;
+            const bookCenterY = bookRect.top + bookRect.height / 2;
+            
+            particleInterval = setInterval(() => {
+                createMusicParticle(bookCenterX, bookCenterY);
+            }, 500);
+        }
+
+        function stopMusicParticles() {
+            if (particleInterval) {
+                clearInterval(particleInterval);
+                particleInterval = null;
+            }
+        }
+
+        function createMusicParticle(x, y) {
+            const particle = document.createElement('div');
+            particle.classList.add('particle');
+            
+            // Różne emoji nut
+            const noteEmojis = ['♪', '♫', '♩', '♬'];
+            particle.textContent = noteEmojis[Math.floor(Math.random() * noteEmojis.length)];
+            
+            // Losowa pozycja wokół centrum książki
+            const offsetX = (Math.random() - 0.5) * 150;
+            const offsetY = (Math.random() - 0.5) * 100;
+            
+            particle.style.left = (x + offsetX) + 'px';
+            particle.style.top = (y + offsetY) + 'px';
+            
+            musicParticles.appendChild(particle);
+            
+            setTimeout(() => {
+                if (particle.parentNode) {
+                    particle.remove();
+                }
+            }, 3000);
+        }
+
+        // Obsługa przeciągania - dodaj stronę 2 (back side)
+        cornerGrab.addEventListener('mousedown', startDrag);
+        page1.addEventListener('mousedown', startDrag);
+
+        function startDrag(e) {
+            e.preventDefault();
+            
+            // Sprawdź czy można złapać stronę
+            const isCornerGrab = e.target === cornerGrab;
+            const isPage1Element = e.target.closest('.page1');
+            const clickedOnButton = e.target.closest('.btn');
+            
+            // Nie pozwól na przeciąganie gdy kliknięto przycisk
+            if (clickedOnButton) return;
+            
+            // Pozwól na przeciąganie gdy:
+            // 1. Kliknięto róg
+            // 2. Kliknięto na stronę 1 (przód gdy zamknięta, tył gdy otwarta)
+            if (!isCornerGrab && !isPage1Element) return;
+            
+            isDragging = true;
+            startX = e.clientX;
+            
+            cornerGrab.classList.add('active');
+            page1.classList.add('dragging');
+            
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', endDrag);
+        }
+
+        function drag(e) {
+            if (!isDragging) return;
+            
+            const deltaX = e.clientX - startX;
+            const maxRotation = 180;
+            
+            let rotation;
+            if (isFlipped) {
+                // Gdy książka jest otwarta, pozwól na ruch w obie strony
+                rotation = Math.max(-180, Math.min(0, -180 + deltaX * 0.5));
+            } else {
+                // Gdy książka jest zamknięta, pozwól tylko na otwieranie (ruch w lewo)
+                rotation = Math.max(-maxRotation, Math.min(0, currentRotation + deltaX * 0.5));
+            }
+            
+            page1.style.transform = `rotateY(${rotation}deg)`;
+        }
+
+        function endDrag(e) {
+            if (!isDragging) return;
+            
+            isDragging = false;
+            cornerGrab.classList.remove('active');
+            page1.classList.remove('dragging');
+            
+            const deltaX = e.clientX - startX;
+            const threshold = 80;
+            
+            if (deltaX < -threshold && !isFlipped) {
+                // Otwórz zaproszenie (przeciągnij w lewo)
+                flipPage();
+                playMusic();
+            } else if (deltaX > threshold && isFlipped) {
+                // Zamknij zaproszenie (przeciągnij w prawo gdy jest otwarte)
+                unflipPage();
+                stopMusic();
+            } else if (deltaX < -threshold && isFlipped) {
+                // Dodatkowe zamykanie - przeciągnij dalej w lewo gdy już otwarte
+                unflipPage();
+                stopMusic();
+            } else {
+                // Wróć do pierwotnej pozycji
+                resetPage();
+            }
+            
+            document.removeEventListener('mousemove', drag);
+            document.removeEventListener('mouseup', endDrag);
+        }
+
+        function flipPage() {
+            isFlipped = true;
+            currentRotation = -180;
+            page1.classList.add('flipped');
+            page1.style.transform = 'rotateY(-180deg)';
+            
+            // Pokaż przyciski
+            setTimeout(() => {
+                buttonsContainer.classList.add('visible');
+            }, 300);
+        }
+
+        function unflipPage() {
+            isFlipped = false;
+            currentRotation = 0;
+            page1.classList.remove('flipped');
+            page1.style.transform = 'rotateY(0deg)';
+            
+            // Ukryj przyciski
+            buttonsContainer.classList.remove('visible');
+        }
+
+        function resetPage() {
+            page1.style.transform = `rotateY(${currentRotation}deg)`;
+            
+            // Animacja powrotu
+            setTimeout(() => {
+                page1.style.transition = 'transform 0.4s ease-out';
+                page1.style.transform = isFlipped ? 'rotateY(-180deg)' : 'rotateY(0deg)';
+                
+                setTimeout(() => {
+                    page1.style.transition = '';
+                }, 400);
+            }, 50);
+        }
+
+        function handleButtonClick(action) {
+            console.log(`Kliknięto: ${action}`);
+            
+            switch(action) {
+                case 'archive':
+                    alert('Otwieranie archiwum...');
+                    break;
+                case 'info':
+                    alert('Wyświetlanie informacji...');
+                    break;
+                case 'about':
+                    alert('O aplikacji...');
+                    break;
+            }
+        }
+
+        // Obsługa dotyku
+        cornerGrab.addEventListener('touchstart', handleTouchStart, { passive: false });
+        page1.addEventListener('touchstart', handleTouchStart, { passive: false });
+
+        function handleTouchStart(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent('mousedown', {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            startDrag(mouseEvent);
+        }
+
+        document.addEventListener('touchmove', (e) => {
+            if (isDragging) {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const mouseEvent = new MouseEvent('mousemove', {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                });
+                drag(mouseEvent);
+            }
+        }, { passive: false });
+
+        document.addEventListener('touchend', (e) => {
+            if (isDragging) {
+                e.preventDefault();
+                const mouseEvent = new MouseEvent('mouseup', {
+                    clientX: 0,
+                    clientY: 0
+                });
+                endDrag(mouseEvent);
+            }
+        });
+
+        // Inicjalizacja audio
+        document.addEventListener('click', () => {
+            if (!audioContext) {
+                initAudio();
+            }
+        }, { once: true });
+    </script>
+</body>
+</html>
