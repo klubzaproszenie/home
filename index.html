@@ -1,396 +1,350 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Klub Zaproszenie</title>
-    <style>
-        @font-face {
-            font-family: 'Apple Garamond';
-            src: url('fonts/AppleGaramond-Italic.ttf') format('truetype');
-            font-style: italic;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Klub Zaproszenie</title>
+  <style>
+    @font-face {
+      font-family: 'Apple Garamond';
+      src: url('fonts/AppleGaramond-Italic.ttf') format('truetype');
+      font-style: italic;
+    }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-        html, body {
-            cursor: url('cursor1.png') 16 16, auto; /* hotspot w środku 32×32 */
-        }
+    html, body {
+      cursor: url('cursor1.png') 16 16, auto; /* hotspot w środku 32×32 */
+    }
 
-        body {
-            font-family: 'Apple Garamond', serif;
-            background: #cccccc;       /* tło okna: ciemniejszy, jasno szary */
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
-            user-select: none;
-        }
+    body {
+      font-family: 'Apple Garamond', serif;
+      background: #cccccc;       /* tło okna: ciemniejszy, jasno szary */
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      user-select: none;
+    }
 
-        .book-container {
-            perspective: 1200px;
-            transform-style: preserve-3d;
-        }
+    .book-container {
+      perspective: 1200px;
+      transform-style: preserve-3d;
+    }
 
-        .book {
-            width: 500px;
-            height: 563px; /* proporcja 500×(338/300) ≈ 563 */
-            position: relative;
-            transform-style: preserve-3d;
-            transform: rotateX(5deg);
-        }
+    .book {
+      width: 500px;
+      height: 563px; /* proporcja 1.1267 */
+      position: relative;
+      transform-style: preserve-3d;
+      transform: rotateX(5deg);
+    }
 
-        .page {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            border-radius: 10px; /* zaokrąglone rogi */
-            cursor: grab;
-            transform-style: preserve-3d;
-            backface-visibility: hidden;
-        }
-        .page.dragging {
-            cursor: grabbing;
-            z-index: 1000;
-        }
+    .page {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 10px; /* zaokrąglone rogi */
+      cursor: grab;
+      transform-style: preserve-3d;
+      backface-visibility: hidden;
+      overflow: hidden;
+    }
+    .page.dragging {
+      cursor: grabbing;
+      z-index: 1000;
+    }
 
-        /* Strona 1: front z logo */
-        .page1 .page-front {
-            background: #e0e0e0;        /* jasno szare tło dla kartki */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            border-radius: 10px;
-            z-index: 3;                /* strona 1 nad menu, gdy zamknięta */
-        }
+    .page-front {
+      background: #e0e0e0;        /* jasno szare tło dla kartki */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 10px;
+      z-index: 2;
+    }
 
-        .page1-logo {
-            max-width: 80%;
-            max-height: 80%;
-            object-fit: contain;
-        }
+    .page-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: #e0e0e0;
+      border-radius: 10px;
+      transform: rotateY(180deg);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      backface-visibility: hidden;
+      flex-direction: column;
+      gap: 20px;
+      z-index: 1;
+    }
 
-        /* Wszystkie strony: jasno szare tło, zaokrąglone rogi */
-        .page-front, .page-back {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            background: #e0e0e0;
-            border-radius: 10px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            backface-visibility: hidden;
-        }
+    .page.flipped .page-front {
+      transform: rotateY(-180deg);
+    }
+    .page.flipped .page-back {
+      transform: rotateY(0deg);
+    }
 
-        .page-back {
-            transform: rotateY(180deg);
-        }
+    .page1 {
+      transform-origin: left center;
+      transition: transform 0.6s ease-out;
+    }
 
-        .page1 {
-            transform-origin: left center;
-            transition: transform 0.6s ease-out;
-        }
+    .page1.flipped {
+      transform: rotateY(-180deg);
+    }
 
-        .page1.flipped {
-            transform: rotateY(-180deg);
-            z-index: 1; /* po otwarciu schodzimy niżej, by odsłonić menu */
-        }
+    .btn {
+      background: none;
+      border: none;
+      font-family: 'Apple Garamond', serif;
+      font-size: 36px;
+      color: #333;
+      cursor: url('cursorhover.png') 16 16, pointer; /* hotspot w środku */
+      text-decoration: none;
+    }
+    .btn:hover {
+      color: #000;
+      text-decoration: underline;
+    }
 
-        .page3 {
-            z-index: 2; /* menu jest z-index 2 */
-            transform: translateZ(-4px);
-        }
+    .music-particles {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1000;
+    }
+    .particle {
+      position: absolute;
+      font-size: 60px; /* 3× większe nutki */
+      opacity: 0;
+      animation: float-up 3s ease-out forwards;
+    }
+    @keyframes float-up {
+      0% {
+        opacity: 1;
+        transform: translateY(0) rotate(0deg);
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(-100px) rotate(360deg);
+      }
+    }
 
-        /* Menu pod stroną, ukrywane przez okładkę, gdy zamknięta */
-        .buttons-container {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            z-index: 2;     /* menu na poziomie 2 */
-            align-items: center;
-        }
-
-        .btn {
-            background: none;
-            border: none;
-            font-family: 'Apple Garamond', serif;
-            font-size: 36px;
-            color: #333;
-            cursor: url('cursorhover.png') 16 16, pointer; /* hotspot w środku */
-            text-decoration: none;
-        }
-
-        .btn:hover {
-            color: #000;
-            text-decoration: underline;
-        }
-
-        /* Przyciski zamykania (można usunąć, bo można łapać całą stronę) */
-        .corner-grab {
-            display: none;
-        }
-        .corner-grab2 {
-            display: none;
-        }
-
-        .music-particles {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 1000;
-        }
-
-        .particle {
-            position: absolute;
-            font-size: 60px; /* 3× większe nutki */
-            opacity: 0;
-            animation: float-up 3s ease-out forwards;
-        }
-
-        @keyframes float-up {
-            0% {
-                opacity: 1;
-                transform: translateY(0) rotate(0deg);
-            }
-            100% {
-                opacity: 0;
-                transform: translateY(-100px) rotate(360deg);
-            }
-        }
-
-        /* Responsywność na urządzenia mobilne */
-        @media (max-width: 800px) {
-            .book {
-                width: 300px;
-                height: 338px; /* proporcja 300×(338/300) */
-            }
-            .btn {
-                font-size: 28px;
-            }
-            .particle {
-                font-size: 40px;
-            }
-        }
-    </style>
+    /* Responsywność na urządzenia mobilne */
+    @media (max-width: 800px) {
+      .book {
+        width: 300px;
+        height: 338px; /* proporcja 300×(338/300) */
+      }
+      .btn {
+        font-size: 28px;
+      }
+      .particle {
+        font-size: 40px;
+      }
+    }
+  </style>
 </head>
 <body>
-    <div class="book-container">
-        <div class="book" id="book">
-            <!-- Strona 1 (okładka) z logo w centrum -->
-            <div class="page page1" id="page1">
-                <div class="page-front">
-                    <img src="logo.png" alt="Logo" class="page1-logo">
-                </div>
-                <div class="page-back" id="page1Back"></div>
-            </div>
-
-            <!-- Strona 3: druga strona książeczki, widoczna po otwarciu -->
-            <div class="page page3" id="page3">
-                <div class="page-front">
-                    <!-- Dodatkowa treść drugiej strony, jeśli potrzeba -->
-                </div>
-            </div>
-
-            <!-- Menu, które jest przykrywane okładką, gdy książka zamknięta -->
-            <div class="buttons-container" id="buttonsContainer">
-                <button class="btn" onclick="handleButtonClick('archive')">Archive</button>
-                <button class="btn" onclick="handleButtonClick('info')">Info</button>
-                <button class="btn" onclick="handleButtonClick('about')">About</button>
-            </div>
+  <div class="book-container">
+    <div class="book">
+      <!-- Pojedyncza karta: .page1 z front/back -->
+      <div class="page page1" id="page1">
+        <div class="page-front">
+          <img src="logo.png" alt="Logo" style="max-width:80%; max-height:80%; object-fit:contain;">
         </div>
+        <div class="page-back" id="pageBack">
+          <!-- Menu widoczne po obróceniu -->
+          <button class="btn" onclick="handleButtonClick('archive')">Archive</button>
+          <button class="btn" onclick="handleButtonClick('info')">Info</button>
+          <button class="btn" onclick="handleButtonClick('about')">About</button>
+        </div>
+      </div>
     </div>
+  </div>
 
-    <div class="music-particles" id="musicParticles"></div>
+  <div class="music-particles" id="musicParticles"></div>
 
-    <script>
-        let isDragging = false;
-        let startX = 0;
-        let currentRotation = 0;
-        let isFlipped = false;
-        let particleInterval;
-        let permissionGranted = false;
-        const audio = new Audio('muza.wav');
-        audio.loop = true;
+  <script>
+    let isDragging = false;
+    let startX = 0;
+    let currentRotation = 0;
+    let isFlipped = false;
+    let particleInterval;
+    let permissionGranted = false;
+    const audio = new Audio('muza.wav');
+    audio.loop = true;
 
-        const page1 = document.getElementById('page1');
-        const buttonsContainer = document.getElementById('buttonsContainer');
-        const musicParticles = document.getElementById('musicParticles');
-        const book = document.getElementById('book');
+    const page1 = document.getElementById('page1');
+    const book = document.querySelector('.book');
+    const musicParticles = document.getElementById('musicParticles');
 
-        function startMusicParticles() {
-            const bookRect = book.getBoundingClientRect();
-            const bookCenterX = bookRect.left + bookRect.width / 2;
-            const bookCenterY = bookRect.top + bookRect.height / 2;
-            particleInterval = setInterval(() => {
-                createMusicParticle(bookCenterX, bookCenterY);
-            }, 500);
+    function startMusicParticles() {
+      const bookRect = book.getBoundingClientRect();
+      const bookCenterX = bookRect.left + bookRect.width / 2;
+      const bookCenterY = bookRect.top + bookRect.height / 2;
+      particleInterval = setInterval(() => {
+        createMusicParticle(bookCenterX, bookCenterY);
+      }, 500);
+    }
+
+    function stopMusicParticles() {
+      if (particleInterval) {
+        clearInterval(particleInterval);
+        particleInterval = null;
+      }
+    }
+
+    function createMusicParticle(x, y) {
+      const particle = document.createElement('div');
+      particle.classList.add('particle');
+      const noteEmojis = ['♪', '♫', '♩', '♬'];
+      particle.textContent = noteEmojis[Math.floor(Math.random() * noteEmojis.length)];
+      const offsetX = (Math.random() - 0.5) * 150;
+      const offsetY = (Math.random() - 0.5) * 100;
+      particle.style.left = (x + offsetX) + 'px';
+      particle.style.top = (y + offsetY) + 'px';
+      musicParticles.appendChild(particle);
+      setTimeout(() => {
+        if (particle.parentNode) {
+          particle.remove();
         }
+      }, 3000);
+    }
 
-        function stopMusicParticles() {
-            if (particleInterval) {
-                clearInterval(particleInterval);
-                particleInterval = null;
-            }
-        }
+    // Odblokowanie odtwarzania muzyki przy pierwszym kliknięciu w książkę
+    book.addEventListener('click', () => {
+      if (!permissionGranted) {
+        audio.play().then(() => {
+          audio.pause();
+          permissionGranted = true;
+        }).catch(() => {
+          // Jeżeli odtwarzanie nie powiodło się, spróbujemy później
+        });
+      }
+    }, { once: true });
 
-        function createMusicParticle(x, y) {
-            const particle = document.createElement('div');
-            particle.classList.add('particle');
-            const noteEmojis = ['♪', '♫', '♩', '♬'];
-            particle.textContent = noteEmojis[Math.floor(Math.random() * noteEmojis.length)];
-            const offsetX = (Math.random() - 0.5) * 150;
-            const offsetY = (Math.random() - 0.5) * 100;
-            particle.style.left = (x + offsetX) + 'px';
-            particle.style.top = (y + offsetY) + 'px';
-            musicParticles.appendChild(particle);
-            setTimeout(() => {
-                if (particle.parentNode) {
-                    particle.remove();
-                }
-            }, 3000);
-        }
+    // Obsługa przeciągania front/back dla page1
+    page1.addEventListener('mousedown', startDrag);
+    page1.addEventListener('touchstart', handleTouchStart, { passive: false });
 
-        // Odblokowanie odtwarzania muzyki przy pierwszym kliknięciu w książkę
-        book.addEventListener('click', () => {
-            if (!permissionGranted) {
-                audio.play().then(() => {
-                    audio.pause();
-                    permissionGranted = true;
-                }).catch(() => {
-                    // Jeżeli odtwarzanie nie powiodło się, spróbujemy później
-                });
-            }
-        }, { once: true });
+    function startDrag(e) {
+      e.preventDefault();
+      isDragging = true;
+      startX = (e.type === 'touchstart') ? e.touches[0].clientX : e.clientX;
+      page1.classList.add('dragging');
+      document.addEventListener('mousemove', drag);
+      document.addEventListener('mouseup', endDrag);
+      document.addEventListener('touchmove', handleTouchMove, { passive: false });
+      document.addEventListener('touchend', handleTouchEnd);
+    }
 
-        // Obsługa przeciągania front i back pierwszej strony – otwarcie i zamknięcie
-        page1.addEventListener('mousedown', startDrag);
-        page1.addEventListener('touchstart', handleTouchStart, { passive: false });
+    function drag(e) {
+      if (!isDragging) return;
+      const clientX = (e.type === 'touchmove') ? e.touches[0].clientX : e.clientX;
+      const deltaX = clientX - startX;
+      const maxRotation = 180;
+      let rotation;
+      if (isFlipped) {
+        rotation = Math.max(-180, Math.min(0, -180 + deltaX * 0.5));
+      } else {
+        rotation = Math.max(-maxRotation, Math.min(0, currentRotation + deltaX * 0.5));
+      }
+      page1.style.transform = `rotateY(${rotation}deg)`;
+    }
 
-        function startDrag(e) {
-            e.preventDefault();
-            // tylko jeśli klikamy na page1
-            const isPage1 = e.target.closest('.page1');
-            if (!isPage1) return;
-            isDragging = true;
-            startX = (e.type === 'touchstart') ? e.touches[0].clientX : e.clientX;
-            page1.classList.add('dragging');
-            document.addEventListener('mousemove', drag);
-            document.addEventListener('mouseup', endDrag);
-            document.addEventListener('touchmove', handleTouchMove, { passive: false });
-            document.addEventListener('touchend', handleTouchEnd);
-        }
+    function endDrag(e) {
+      if (!isDragging) return;
+      isDragging = false;
+      page1.classList.remove('dragging');
+      const clientX = (e.type === 'touchend' && e.changedTouches) ? e.changedTouches[0].clientX : e.clientX;
+      const deltaX = clientX - startX;
+      const threshold = 60;
+      if (deltaX < -threshold && !isFlipped) {
+        flipPage();
+      } else if (deltaX > threshold && isFlipped) {
+        unflipPage();
+      } else {
+        resetPage();
+      }
+      document.removeEventListener('mousemove', drag);
+      document.removeEventListener('mouseup', endDrag);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+    }
 
-        function drag(e) {
-            if (!isDragging) return;
-            const clientX = (e.type === 'touchmove') ? e.touches[0].clientX : e.clientX;
-            const deltaX = clientX - startX;
-            const maxRotation = 180;
-            let rotation;
-            if (isFlipped) {
-                rotation = Math.max(-180, Math.min(0, -180 + deltaX * 0.5));
-            } else {
-                rotation = Math.max(-maxRotation, Math.min(0, currentRotation + deltaX * 0.5));
-            }
-            page1.style.transform = `rotateY(${rotation}deg)`;
-        }
+    function handleTouchStart(e) {
+      e.preventDefault();
+      startDrag(e);
+    }
 
-        function endDrag(e) {
-            if (!isDragging) return;
-            isDragging = false;
-            page1.classList.remove('dragging');
-            const clientX = (e.type === 'touchend' && e.changedTouches) ? e.changedTouches[0].clientX : e.clientX;
-            const deltaX = clientX - startX;
-            const threshold = 60;
-            if (deltaX < -threshold && !isFlipped) {
-                flipPage();
-            } else if (deltaX > threshold && isFlipped) {
-                unflipPage();
-            } else {
-                resetPage();
-            }
-            document.removeEventListener('mousemove', drag);
-            document.removeEventListener('mouseup', endDrag);
-            document.removeEventListener('touchmove', handleTouchMove);
-            document.removeEventListener('touchend', handleTouchEnd);
-        }
+    function handleTouchMove(e) {
+      e.preventDefault();
+      drag(e);
+    }
 
-        function handleTouchStart(e) {
-            e.preventDefault();
-            startDrag(e);
-        }
+    function handleTouchEnd(e) {
+      e.preventDefault();
+      endDrag(e);
+    }
 
-        function handleTouchMove(e) {
-            e.preventDefault();
-            drag(e);
-        }
+    function flipPage() {
+      isFlipped = true;
+      currentRotation = -180;
+      page1.classList.add('flipped');
+      page1.style.transform = 'rotateY(-180deg)';
+      if (permissionGranted) {
+        audio.currentTime = 0;
+        audio.play();
+      }
+      startMusicParticles();
+    }
 
-        function handleTouchEnd(e) {
-            e.preventDefault();
-            endDrag(e);
-        }
+    function unflipPage() {
+      isFlipped = false;
+      currentRotation = 0;
+      page1.classList.remove('flipped');
+      page1.style.transform = 'rotateY(0deg)';
+      audio.pause();
+      stopMusicParticles();
+    }
 
-        function flipPage() {
-            isFlipped = true;
-            currentRotation = -180;
-            page1.classList.add('flipped');
-            page1.style.transform = 'rotateY(-180deg)';
-            // odsunięcie z-index, żeby odsłonić menu
-            page1.style.zIndex = '1';
-            if (permissionGranted) {
-                audio.currentTime = 0;
-                audio.play();
-            }
-            startMusicParticles();
-        }
+    function resetPage() {
+      page1.style.transform = `rotateY(${currentRotation}deg)`;
+      setTimeout(() => {
+        page1.style.transition = 'transform 0.4s ease-out';
+        page1.style.transform = isFlipped ? 'rotateY(-180deg)' : 'rotateY(0deg)';
+        setTimeout(() => {
+          page1.style.transition = '';
+        }, 400);
+      }, 50);
+    }
 
-        function unflipPage() {
-            isFlipped = false;
-            currentRotation = 0;
-            page1.classList.remove('flipped');
-            page1.style.transform = 'rotateY(0deg)';
-            page1.style.zIndex = '3'; // przywróć z-index nad menu
-            audio.pause();
-            stopMusicParticles();
-        }
-
-        function resetPage() {
-            page1.style.transform = `rotateY(${currentRotation}deg)`;
-            setTimeout(() => {
-                page1.style.transition = 'transform 0.4s ease-out';
-                page1.style.transform = isFlipped ? 'rotateY(-180deg)' : 'rotateY(0deg)';
-                setTimeout(() => {
-                    page1.style.transition = '';
-                }, 400);
-            }, 50);
-        }
-
-        function handleButtonClick(action) {
-            console.log(`Kliknięto: ${action}`);
-            switch(action) {
-                case 'archive':
-                    alert('Otwieranie archiwum...');
-                    break;
-                case 'info':
-                    alert('Wyświetlanie informacji...');
-                    break;
-                case 'about':
-                    alert('O aplikacji...');
-                    break;
-            }
-        }
-    </script>
+    function handleButtonClick(action) {
+      console.log(`Kliknięto: ${action}`);
+      switch(action) {
+        case 'archive':
+          alert('Otwieranie archiwum...');
+          break;
+        case 'info':
+          alert('Wyświetlanie informacji...');
+          break;
+        case 'about':
+          alert('O aplikacji...');
+          break;
+      }
+    }
+  </script>
 </body>
 </html>
