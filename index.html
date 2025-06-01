@@ -13,6 +13,10 @@
             box-sizing: border-box;
         }
 
+        html, body {
+            cursor: url('cursor1.png'), none; /* tylko customowy kursor, brak systemowego */
+        }
+
         body {
             font-family: 'EB Garamond', serif;
             background: #cccccc;       /* tło okna: ciemniejszy, jasno szary */
@@ -22,7 +26,6 @@
             align-items: center;
             overflow: hidden;
             user-select: none;
-            cursor: url('cursor1.png'), auto; /* normalny kursor */
         }
 
         .book-container {
@@ -30,6 +33,7 @@
             transform-style: preserve-3d;
         }
 
+        /* Podstawowy rozmiar książeczki */
         .book {
             width: 300px;
             height: 338px;
@@ -39,7 +43,7 @@
         }
         /* Kursor po najechaniu na książkę */
         .book:hover {
-            cursor: url('cursor2.png'), grab;
+            cursor: url('cursor2.png'), none;
         }
 
         .page {
@@ -47,7 +51,7 @@
             width: 100%;
             height: 100%;
             border-radius: 3px;
-            cursor: grab;
+            cursor: grab; /* kursor łapania - i tak będzie zastępowany przez custom */
             transform-style: preserve-3d;
             backface-visibility: hidden;
         }
@@ -72,12 +76,12 @@
             object-fit: contain;
         }
 
-        /* Usunięte obramowania i cienie, jasno szare tło dla wszystkich stron */
+        /* Wszystkie strony: jasno szare tło, bez obramowań i cieni */
         .page-front, .page-back {
             position: absolute;
             width: 100%;
             height: 100%;
-            background: #e0e0e0;       /* jasno szare tło */
+            background: #e0e0e0;
             border-radius: 3px;
             display: flex;
             justify-content: center;
@@ -104,7 +108,7 @@
             transform: translateZ(-4px);
         }
 
-        /* Menu, które jest zawsze obecne, ale przykrywane przez okładkę */
+        /* Menu, które jest przykrywane okładką, gdy książka zamknięta */
         .buttons-container {
             position: absolute;
             top: 50%;
@@ -123,7 +127,7 @@
             font-family: 'EB Garamond', serif;
             font-size: 36px;
             color: #333;
-            cursor: url('cursorhover.png'), pointer; /* kursor przy najechaniu na przycisk */
+            cursor: url('cursorhover.png'), none; /* kursor przy najechaniu na przycisk */
             text-decoration: none;
         }
 
@@ -147,13 +151,11 @@
             transition: opacity 0.3s ease;
         }
 
-        .corner-grab:hover,
-        .corner-grab2:hover {
+        .corner-grab:hover, .corner-grab2:hover {
             opacity: 1;
         }
 
-        .corner-grab.active,
-        .corner-grab2.active {
+        .corner-grab.active, .corner-grab2.active {
             cursor: grabbing;
             opacity: 0.7;
         }
@@ -218,7 +220,7 @@
             <div class="page page3" id="page3">
                 <div class="page-front">
                     <div class="corner-grab2" id="cornerGrab2"></div>
-                    <!-- Tu może być dodatkowa treść drugiej strony -->
+                    <!-- Tutaj dodatkowa treść drugiej strony -->
                 </div>
             </div>
 
@@ -239,8 +241,9 @@
         let currentRotation = 0;
         let isFlipped = false;
         let particleInterval;
-        let audio = new Audio('muza.wav'); // załaduj plik muzyczny WAV
-        audio.loop = true;                  // muzyka będzie grać w pętli po otwarciu
+        let permissionGranted = false;
+        const audio = new Audio('muza.wav');
+        audio.loop = true;
 
         const page1 = document.getElementById('page1');
         const cornerGrab = document.getElementById('cornerGrab');
@@ -253,7 +256,6 @@
             const bookRect = book.getBoundingClientRect();
             const bookCenterX = bookRect.left + bookRect.width / 2;
             const bookCenterY = bookRect.top + bookRect.height / 2;
-            
             particleInterval = setInterval(() => {
                 createMusicParticle(bookCenterX, bookCenterY);
             }, 500);
@@ -269,18 +271,13 @@
         function createMusicParticle(x, y) {
             const particle = document.createElement('div');
             particle.classList.add('particle');
-            
             const noteEmojis = ['♪', '♫', '♩', '♬'];
             particle.textContent = noteEmojis[Math.floor(Math.random() * noteEmojis.length)];
-            
             const offsetX = (Math.random() - 0.5) * 150;
             const offsetY = (Math.random() - 0.5) * 100;
-            
             particle.style.left = (x + offsetX) + 'px';
             particle.style.top = (y + offsetY) + 'px';
-            
             musicParticles.appendChild(particle);
-            
             setTimeout(() => {
                 if (particle.parentNode) {
                     particle.remove();
@@ -288,53 +285,61 @@
             }, 3000);
         }
 
-        // Obsługa przeciągania pierwszej strony, żeby otworzyć książeczkę
+        // Odblokowanie odtwarzania muzyki przy pierwszym kliknięciu w książkę
+        book.addEventListener('click', () => {
+            if (!permissionGranted) {
+                audio.play().then(() => {
+                    audio.pause();
+                    permissionGranted = true;
+                }).catch(() => {
+                    // Jeżeli odtwarzanie nie powiodło się, spróbujemy później
+                });
+            }
+        }, { once: true });
+
+        // Obsługa przeciągania pierwszej strony – otwarcie
         cornerGrab.addEventListener('mousedown', startDrag);
         page1.addEventListener('mousedown', startDrag);
+        cornerGrab.addEventListener('touchstart', handleTouchStart1, { passive: false });
+        page1.addEventListener('touchstart', handleTouchStart1, { passive: false });
 
         function startDrag(e) {
             e.preventDefault();
-            
             const isCornerGrabTarget = e.target === cornerGrab;
             const isPage1Element = e.target.closest('.page1');
             const clickedOnButton = e.target.closest('.btn');
-            
             if (clickedOnButton) return;
             if (!isCornerGrabTarget && !isPage1Element) return;
-            
             isDragging = true;
-            startX = e.clientX;
-            
+            startX = (e.type === 'touchstart') ? e.touches[0].clientX : e.clientX;
             page1.classList.add('dragging');
             document.addEventListener('mousemove', drag);
             document.addEventListener('mouseup', endDrag);
+            document.addEventListener('touchmove', handleTouchMove, { passive: false });
+            document.addEventListener('touchend', handleTouchEnd);
         }
 
         function drag(e) {
             if (!isDragging) return;
-            
-            const deltaX = e.clientX - startX;
+            const clientX = (e.type === 'touchmove') ? e.touches[0].clientX : e.clientX;
+            const deltaX = clientX - startX;
             const maxRotation = 180;
             let rotation;
-            
             if (isFlipped) {
                 rotation = Math.max(-180, Math.min(0, -180 + deltaX * 0.5));
             } else {
                 rotation = Math.max(-maxRotation, Math.min(0, currentRotation + deltaX * 0.5));
             }
-            
             page1.style.transform = `rotateY(${rotation}deg)`;
         }
 
         function endDrag(e) {
             if (!isDragging) return;
-            
             isDragging = false;
             page1.classList.remove('dragging');
-            
-            const deltaX = e.clientX - startX;
-            const threshold = 60; // mniejszy threshold przy mniejszej książce
-            
+            const clientX = (e.type === 'touchend' && e.changedTouches) ? e.changedTouches[0].clientX : e.clientX;
+            const deltaX = clientX - startX;
+            const threshold = 60;
             if (deltaX < -threshold && !isFlipped) {
                 flipPage();
             } else if (deltaX > threshold && isFlipped) {
@@ -342,9 +347,25 @@
             } else {
                 resetPage();
             }
-            
             document.removeEventListener('mousemove', drag);
             document.removeEventListener('mouseup', endDrag);
+            document.removeEventListener('touchmove', handleTouchMove);
+            document.removeEventListener('touchend', handleTouchEnd);
+        }
+
+        function handleTouchStart1(e) {
+            e.preventDefault();
+            startDrag(e);
+        }
+
+        function handleTouchMove(e) {
+            e.preventDefault();
+            drag(e);
+        }
+
+        function handleTouchEnd(e) {
+            e.preventDefault();
+            endDrag(e);
         }
 
         function flipPage() {
@@ -352,8 +373,10 @@
             currentRotation = -180;
             page1.classList.add('flipped');
             page1.style.transform = 'rotateY(-180deg)';
-            audio.currentTime = 0;
-            audio.play();
+            if (permissionGranted) {
+                audio.currentTime = 0;
+                audio.play();
+            }
             startMusicParticles();
         }
 
@@ -392,51 +415,10 @@
             }
         }
 
-        // Obsługa zamykania książki kliknięciem na drugą stronę
+        // Zamykanie książki kliknięciem na drugą stronę
         page3.addEventListener('click', () => {
-            if (isFlipped) {
-                unflipPage();
-            }
+            if (isFlipped) unflipPage();
         });
-
-        // Obsługa dotyku na pierwszej stronie (otwieranie)
-        cornerGrab.addEventListener('touchstart', handleTouchStart1, { passive: false });
-        page1.addEventListener('touchstart', handleTouchStart1, { passive: false });
-
-        function handleTouchStart1(e) {
-            e.preventDefault();
-            const touch = e.touches[0];
-            const mouseEvent = new MouseEvent('mousedown', {
-                clientX: touch.clientX,
-                clientY: touch.clientY
-            });
-            startDrag(mouseEvent);
-        }
-
-        document.addEventListener('touchmove', (e) => {
-            if (isDragging) {
-                e.preventDefault();
-                const touch = e.touches[0];
-                const mouseEvent = new MouseEvent('mousemove', {
-                    clientX: touch.clientX,
-                    clientY: touch.clientY
-                });
-                drag(mouseEvent);
-            }
-        }, { passive: false });
-
-        document.addEventListener('touchend', (e) => {
-            if (isDragging) {
-                e.preventDefault();
-                const mouseEvent = new MouseEvent('mouseup', {
-                    clientX: 0,
-                    clientY: 0
-                });
-                endDrag(mouseEvent);
-            }
-        });
-
-        // Obsługa dotyku na drugiej stronie (zamykanie)
         page3.addEventListener('touchstart', (e) => {
             e.preventDefault();
             if (isFlipped) unflipPage();
