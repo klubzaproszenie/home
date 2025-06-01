@@ -6,7 +6,7 @@
     <title>Klub Zaproszenie</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;600&display=swap');
-        
+
         * {
             margin: 0;
             padding: 0;
@@ -22,6 +22,7 @@
             align-items: center;
             overflow: hidden;
             user-select: none;
+            cursor: url('cursor1.png'), auto; /* normalny kursor */
         }
 
         .book-container {
@@ -30,11 +31,15 @@
         }
 
         .book {
-            width: 400px;
-            height: 450px;
+            width: 300px;
+            height: 338px;
             position: relative;
             transform-style: preserve-3d;
             transform: rotateX(5deg);
+        }
+        /* Kursor po najechaniu na książkę */
+        .book:hover {
+            cursor: url('cursor2.png'), grab;
         }
 
         .page {
@@ -46,7 +51,6 @@
             transform-style: preserve-3d;
             backface-visibility: hidden;
         }
-
         .page.dragging {
             cursor: grabbing;
             z-index: 1000;
@@ -95,18 +99,12 @@
             transform: rotateY(-180deg);
         }
 
-        .page2 {
-            /* można dodać, gdy pojawi się trzecia karta */
-            z-index: 2;
-            transform: translateZ(-2px);
-        }
-
         .page3 {
             z-index: 1;
             transform: translateZ(-4px);
         }
 
-        /* Menu ukryte, pokazuje się dopiero po otwarciu */
+        /* Menu, które jest zawsze obecne, ale przykrywane przez okładkę */
         .buttons-container {
             position: absolute;
             top: 50%;
@@ -114,24 +112,18 @@
             transform: translate(-50%, -50%);
             display: flex;
             flex-direction: column;
-            gap: 30px;
-            opacity: 0;                 /* niewidoczne, gdy książka zamknięta */
-            transition: opacity 0.4s ease;
-            z-index: 2;                 /* poniżej strony1, powyżej tła */
+            gap: 20px;
+            z-index: 2;     /* poniżej okładki (z-index 3), powyżej tła */
             align-items: center;
-        }
-
-        .buttons-container.visible {
-            opacity: 1;                 /* widoczne po otwarciu */
         }
 
         .btn {
             background: none;
             border: none;
             font-family: 'EB Garamond', serif;
-            font-size: 48px;
+            font-size: 36px;
             color: #333;
-            cursor: pointer;
+            cursor: url('cursorhover.png'), pointer; /* kursor przy najechaniu na przycisk */
             text-decoration: none;
         }
 
@@ -145,8 +137,8 @@
             position: absolute;
             top: 0;
             right: 0;
-            width: 60px;
-            height: 60px;
+            width: 45px;
+            height: 45px;
             cursor: grab;
             z-index: 10;
             border-radius: 0 3px 0 60px;
@@ -178,7 +170,7 @@
 
         .particle {
             position: absolute;
-            font-size: 20px;
+            font-size: 60px; /* 3× większe nutki */
             opacity: 0;
             animation: float-up 3s ease-out forwards;
         }
@@ -191,6 +183,21 @@
             100% {
                 opacity: 0;
                 transform: translateY(-100px) rotate(360deg);
+            }
+        }
+
+        /* Responsywność na urządzenia mobilne */
+        @media (max-width: 500px) {
+            .book {
+                width: 250px;
+                height: 282px; /* proporcje 250×(338/300) ≈ 282 */
+            }
+            .btn {
+                font-size: 28px;
+            }
+            .corner-grab, .corner-grab2 {
+                width: 35px;
+                height: 35px;
             }
         }
     </style>
@@ -215,7 +222,7 @@
                 </div>
             </div>
 
-            <!-- Menu, które pokazuje się po otwarciu -->
+            <!-- Menu, które jest przykrywane okładką, gdy książka zamknięta -->
             <div class="buttons-container" id="buttonsContainer">
                 <button class="btn" onclick="handleButtonClick('archive')">Archive</button>
                 <button class="btn" onclick="handleButtonClick('info')">Info</button>
@@ -232,8 +239,8 @@
         let currentRotation = 0;
         let isFlipped = false;
         let particleInterval;
-        let audio = new Audio('muza.mp3'); // załaduj plik muzyczny
-        audio.loop = true;                   // muzyka będzie grać w pętli po otwarciu
+        let audio = new Audio('muza.wav'); // załaduj plik muzyczny WAV
+        audio.loop = true;                  // muzyka będzie grać w pętli po otwarciu
 
         const page1 = document.getElementById('page1');
         const cornerGrab = document.getElementById('cornerGrab');
@@ -326,7 +333,7 @@
             page1.classList.remove('dragging');
             
             const deltaX = e.clientX - startX;
-            const threshold = 80;
+            const threshold = 60; // mniejszy threshold przy mniejszej książce
             
             if (deltaX < -threshold && !isFlipped) {
                 flipPage();
@@ -345,7 +352,6 @@
             currentRotation = -180;
             page1.classList.add('flipped');
             page1.style.transform = 'rotateY(-180deg)';
-            buttonsContainer.classList.add('visible');
             audio.currentTime = 0;
             audio.play();
             startMusicParticles();
@@ -356,7 +362,6 @@
             currentRotation = 0;
             page1.classList.remove('flipped');
             page1.style.transform = 'rotateY(0deg)';
-            buttonsContainer.classList.remove('visible');
             audio.pause();
             stopMusicParticles();
         }
@@ -387,17 +392,15 @@
             }
         }
 
-        // Obsługa zamykania książki z rogu drugiej strony
-        cornerGrab2.addEventListener('mousedown', (e) => {
-            e.preventDefault();
+        // Obsługa zamykania książki kliknięciem na drugą stronę
+        page3.addEventListener('click', () => {
             if (isFlipped) {
                 unflipPage();
             }
         });
 
-        // Obsługa dotyku
+        // Obsługa dotyku na pierwszej stronie (otwieranie)
         cornerGrab.addEventListener('touchstart', handleTouchStart1, { passive: false });
-        cornerGrab2.addEventListener('touchstart', handleTouchStart2, { passive: false });
         page1.addEventListener('touchstart', handleTouchStart1, { passive: false });
 
         function handleTouchStart1(e) {
@@ -408,13 +411,6 @@
                 clientY: touch.clientY
             });
             startDrag(mouseEvent);
-        }
-
-        function handleTouchStart2(e) {
-            e.preventDefault();
-            if (isFlipped) {
-                unflipPage();
-            }
         }
 
         document.addEventListener('touchmove', (e) => {
@@ -439,6 +435,12 @@
                 endDrag(mouseEvent);
             }
         });
+
+        // Obsługa dotyku na drugiej stronie (zamykanie)
+        page3.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (isFlipped) unflipPage();
+        }, { passive: false });
     </script>
 </body>
 </html>
