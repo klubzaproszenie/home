@@ -5,7 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Klub Zaproszenie</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;600&display=swap');
+        @font-face {
+            font-family: 'Apple Garamond';
+            src: url('fonts/AppleGaramond-Italic.ttf') format('truetype');
+            font-style: italic;
+        }
 
         * {
             margin: 0;
@@ -14,11 +18,11 @@
         }
 
         html, body {
-            cursor: url('cursor1.png'), none; /* tylko customowy kursor, brak systemowego */
+            cursor: url('cursor1.png') 16 16, auto; /* zakładamy hotspot w środku 32×32 */
         }
 
         body {
-            font-family: 'EB Garamond', serif;
+            font-family: 'Apple Garamond', serif;
             background: #cccccc;       /* tło okna: ciemniejszy, jasno szary */
             min-height: 100vh;
             display: flex;
@@ -33,25 +37,20 @@
             transform-style: preserve-3d;
         }
 
-        /* Podstawowy rozmiar książeczki */
         .book {
-            width: 300px;
-            height: 338px;
+            width: 500px;
+            height: 563px; /* proporcja 1.1267 */
             position: relative;
             transform-style: preserve-3d;
             transform: rotateX(5deg);
-        }
-        /* Kursor po najechaniu na książkę */
-        .book:hover {
-            cursor: url('cursor2.png'), none;
         }
 
         .page {
             position: absolute;
             width: 100%;
             height: 100%;
-            border-radius: 3px;
-            cursor: grab; /* kursor łapania - i tak będzie zastępowany przez custom */
+            border-radius: 10px; /* zaokrąglone rogi */
+            cursor: grab;
             transform-style: preserve-3d;
             backface-visibility: hidden;
         }
@@ -66,7 +65,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            border-radius: 3px;
+            border-radius: 10px;
             z-index: 10;                /* strona 1 nad menu, gdy zamknięta */
         }
 
@@ -76,13 +75,13 @@
             object-fit: contain;
         }
 
-        /* Wszystkie strony: jasno szare tło, bez obramowań i cieni */
+        /* Wszystkie strony: jasno szare tło, zaokrąglone rogi */
         .page-front, .page-back {
             position: absolute;
             width: 100%;
             height: 100%;
             background: #e0e0e0;
-            border-radius: 3px;
+            border-radius: 10px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -108,7 +107,7 @@
             transform: translateZ(-4px);
         }
 
-        /* Menu, które jest przykrywane okładką, gdy książka zamknięta */
+        /* Menu pod stroną, ukrywane przez okładkę, gdy zamknięta */
         .buttons-container {
             position: absolute;
             top: 50%;
@@ -124,10 +123,10 @@
         .btn {
             background: none;
             border: none;
-            font-family: 'EB Garamond', serif;
+            font-family: 'Apple Garamond', serif;
             font-size: 36px;
             color: #333;
-            cursor: url('cursorhover.png'), none; /* kursor przy najechaniu na przycisk */
+            cursor: url('cursorhover.png') 16 16, pointer; /* hotspot w środku */
             text-decoration: none;
         }
 
@@ -136,7 +135,7 @@
             text-decoration: underline;
         }
 
-        /* Styl dla przycisku zamykania z drugiej strony */
+        /* Przyciski zamykania: zaokrąglone rogi i delikatne tło */
         .corner-grab, .corner-grab2 {
             position: absolute;
             top: 0;
@@ -145,7 +144,7 @@
             height: 45px;
             cursor: grab;
             z-index: 10;
-            border-radius: 0 3px 0 60px;
+            border-radius: 0 10px 0 60px;
             background: rgba(0,0,0,0.05);
             opacity: 0;
             transition: opacity 0.3s ease;
@@ -189,10 +188,10 @@
         }
 
         /* Responsywność na urządzenia mobilne */
-        @media (max-width: 500px) {
+        @media (max-width: 800px) {
             .book {
-                width: 250px;
-                height: 282px; /* proporcje 250×(338/300) ≈ 282 */
+                width: 300px;
+                height: 338px;
             }
             .btn {
                 font-size: 28px;
@@ -200,6 +199,9 @@
             .corner-grab, .corner-grab2 {
                 width: 35px;
                 height: 35px;
+            }
+            .particle {
+                font-size: 40px;
             }
         }
     </style>
@@ -213,14 +215,14 @@
                 <div class="page-front">
                     <img src="logo.png" alt="Logo" class="page1-logo">
                 </div>
-                <div class="page-back"></div>
+                <div class="page-back" id="page1Back"></div>
             </div>
 
             <!-- Strona 3: druga strona książeczki, na froncie przycisk zamykania -->
             <div class="page page3" id="page3">
                 <div class="page-front">
                     <div class="corner-grab2" id="cornerGrab2"></div>
-                    <!-- Tutaj dodatkowa treść drugiej strony -->
+                    <!-- Dodatkowa treść drugiej strony -->
                 </div>
             </div>
 
@@ -246,6 +248,7 @@
         audio.loop = true;
 
         const page1 = document.getElementById('page1');
+        const page1Back = document.getElementById('page1Back');
         const cornerGrab = document.getElementById('cornerGrab');
         const cornerGrab2 = document.getElementById('cornerGrab2');
         const buttonsContainer = document.getElementById('buttonsContainer');
@@ -297,16 +300,20 @@
             }
         }, { once: true });
 
-        // Obsługa przeciągania pierwszej strony – otwarcie
-        cornerGrab.addEventListener('mousedown', startDrag);
-        page1.addEventListener('mousedown', startDrag);
-        cornerGrab.addEventListener('touchstart', handleTouchStart1, { passive: false });
-        page1.addEventListener('touchstart', handleTouchStart1, { passive: false });
+        // Obsługa przeciągania front i back pierwszej strony – otwarcie i zamknięcie
+        function addDragListeners(element) {
+            element.addEventListener('mousedown', startDrag);
+            element.addEventListener('touchstart', handleTouchStart, { passive: false });
+        }
+        addDragListeners(cornerGrab);
+        addDragListeners(page1);
+        addDragListeners(cornerGrab2);
+        addDragListeners(page1Back);
 
         function startDrag(e) {
             e.preventDefault();
-            const isCornerGrabTarget = e.target === cornerGrab;
-            const isPage1Element = e.target.closest('.page1');
+            const isCornerGrabTarget = e.target === cornerGrab || e.target === cornerGrab2;
+            const isPage1Element = e.target.closest('.page1') || e.target.closest('#page1Back');
             const clickedOnButton = e.target.closest('.btn');
             if (clickedOnButton) return;
             if (!isCornerGrabTarget && !isPage1Element) return;
@@ -353,7 +360,7 @@
             document.removeEventListener('touchend', handleTouchEnd);
         }
 
-        function handleTouchStart1(e) {
+        function handleTouchStart(e) {
             e.preventDefault();
             startDrag(e);
         }
@@ -414,15 +421,6 @@
                     break;
             }
         }
-
-        // Zamykanie książki kliknięciem na drugą stronę
-        page3.addEventListener('click', () => {
-            if (isFlipped) unflipPage();
-        });
-        page3.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            if (isFlipped) unflipPage();
-        }, { passive: false });
     </script>
 </body>
 </html>
