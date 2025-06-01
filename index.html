@@ -15,7 +15,7 @@
 
         body {
             font-family: 'EB Garamond', serif;
-            background: #f5f5f5;
+            background: #cccccc;       /* tło okna: ciemniejszy, jasno szary */
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -54,11 +54,12 @@
 
         /* Strona 1: front z logo */
         .page1 .page-front {
-            background: #e0e0e0;        /* jasno szare tło */
+            background: #e0e0e0;        /* jasno szare tło dla kartki */
             display: flex;
             justify-content: center;
             align-items: center;
             border-radius: 3px;
+            z-index: 10;                /* strona 1 nad menu, gdy zamknięta */
         }
 
         .page1-logo {
@@ -67,12 +68,12 @@
             object-fit: contain;
         }
 
-        /* Usunięte obramowania i cienie */
+        /* Usunięte obramowania i cienie, jasno szare tło dla wszystkich stron */
         .page-front, .page-back {
             position: absolute;
             width: 100%;
             height: 100%;
-            background: #e0e0e0;       /* jasno szare tło dla wszystkich stron */
+            background: #e0e0e0;       /* jasno szare tło */
             border-radius: 3px;
             display: flex;
             justify-content: center;
@@ -95,6 +96,7 @@
         }
 
         .page2 {
+            /* można dodać, gdy pojawi się trzecia karta */
             z-index: 2;
             transform: translateZ(-2px);
         }
@@ -104,7 +106,7 @@
             transform: translateZ(-4px);
         }
 
-        /* Menu zawsze widoczne */
+        /* Menu ukryte, pokazuje się dopiero po otwarciu */
         .buttons-container {
             position: absolute;
             top: 50%;
@@ -113,9 +115,14 @@
             display: flex;
             flex-direction: column;
             gap: 30px;
-            opacity: 1;                 /* zawsze widoczne */
-            z-index: 5;
+            opacity: 0;                 /* niewidoczne, gdy książka zamknięta */
+            transition: opacity 0.4s ease;
+            z-index: 2;                 /* poniżej strony1, powyżej tła */
             align-items: center;
+        }
+
+        .buttons-container.visible {
+            opacity: 1;                 /* widoczne po otwarciu */
         }
 
         .btn {
@@ -131,6 +138,32 @@
         .btn:hover {
             color: #000;
             text-decoration: underline;
+        }
+
+        /* Styl dla przycisku zamykania z drugiej strony */
+        .corner-grab, .corner-grab2 {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 60px;
+            height: 60px;
+            cursor: grab;
+            z-index: 10;
+            border-radius: 0 3px 0 60px;
+            background: rgba(0,0,0,0.05);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .corner-grab:hover,
+        .corner-grab2:hover {
+            opacity: 1;
+        }
+
+        .corner-grab.active,
+        .corner-grab2.active {
+            cursor: grabbing;
+            opacity: 0.7;
         }
 
         .music-particles {
@@ -174,12 +207,15 @@
                 <div class="page-back"></div>
             </div>
 
-            <!-- Strona 3 (z treścią lub kolejną stroną) -->
+            <!-- Strona 3: druga strona książeczki, na froncie przycisk zamykania -->
             <div class="page page3" id="page3">
-                <div class="page-front"></div>
+                <div class="page-front">
+                    <div class="corner-grab2" id="cornerGrab2"></div>
+                    <!-- Tu może być dodatkowa treść drugiej strony -->
+                </div>
             </div>
 
-            <!-- Menu zawsze widoczne -->
+            <!-- Menu, które pokazuje się po otwarciu -->
             <div class="buttons-container" id="buttonsContainer">
                 <button class="btn" onclick="handleButtonClick('archive')">Archive</button>
                 <button class="btn" onclick="handleButtonClick('info')">Info</button>
@@ -196,9 +232,12 @@
         let currentRotation = 0;
         let isFlipped = false;
         let particleInterval;
+        let audio = new Audio('muza.mp3'); // załaduj plik muzyczny
+        audio.loop = true;                   // muzyka będzie grać w pętli po otwarciu
 
         const page1 = document.getElementById('page1');
         const cornerGrab = document.getElementById('cornerGrab');
+        const cornerGrab2 = document.getElementById('cornerGrab2');
         const buttonsContainer = document.getElementById('buttonsContainer');
         const musicParticles = document.getElementById('musicParticles');
         const book = document.getElementById('book');
@@ -242,19 +281,19 @@
             }, 3000);
         }
 
-        // Obsługa przeciągania
+        // Obsługa przeciągania pierwszej strony, żeby otworzyć książeczkę
         cornerGrab.addEventListener('mousedown', startDrag);
         page1.addEventListener('mousedown', startDrag);
 
         function startDrag(e) {
             e.preventDefault();
             
-            const isCornerGrab = e.target === cornerGrab;
+            const isCornerGrabTarget = e.target === cornerGrab;
             const isPage1Element = e.target.closest('.page1');
             const clickedOnButton = e.target.closest('.btn');
             
             if (clickedOnButton) return;
-            if (!isCornerGrab && !isPage1Element) return;
+            if (!isCornerGrabTarget && !isPage1Element) return;
             
             isDragging = true;
             startX = e.clientX;
@@ -293,8 +332,6 @@
                 flipPage();
             } else if (deltaX > threshold && isFlipped) {
                 unflipPage();
-            } else if (deltaX < -threshold && isFlipped) {
-                unflipPage();
             } else {
                 resetPage();
             }
@@ -308,6 +345,9 @@
             currentRotation = -180;
             page1.classList.add('flipped');
             page1.style.transform = 'rotateY(-180deg)';
+            buttonsContainer.classList.add('visible');
+            audio.currentTime = 0;
+            audio.play();
             startMusicParticles();
         }
 
@@ -316,6 +356,8 @@
             currentRotation = 0;
             page1.classList.remove('flipped');
             page1.style.transform = 'rotateY(0deg)';
+            buttonsContainer.classList.remove('visible');
+            audio.pause();
             stopMusicParticles();
         }
 
@@ -345,11 +387,20 @@
             }
         }
 
-        // Obsługa dotyku
-        cornerGrab.addEventListener('touchstart', handleTouchStart, { passive: false });
-        page1.addEventListener('touchstart', handleTouchStart, { passive: false });
+        // Obsługa zamykania książki z rogu drugiej strony
+        cornerGrab2.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            if (isFlipped) {
+                unflipPage();
+            }
+        });
 
-        function handleTouchStart(e) {
+        // Obsługa dotyku
+        cornerGrab.addEventListener('touchstart', handleTouchStart1, { passive: false });
+        cornerGrab2.addEventListener('touchstart', handleTouchStart2, { passive: false });
+        page1.addEventListener('touchstart', handleTouchStart1, { passive: false });
+
+        function handleTouchStart1(e) {
             e.preventDefault();
             const touch = e.touches[0];
             const mouseEvent = new MouseEvent('mousedown', {
@@ -357,6 +408,13 @@
                 clientY: touch.clientY
             });
             startDrag(mouseEvent);
+        }
+
+        function handleTouchStart2(e) {
+            e.preventDefault();
+            if (isFlipped) {
+                unflipPage();
+            }
         }
 
         document.addEventListener('touchmove', (e) => {
