@@ -26,11 +26,11 @@
             background: #cccccc;
             min-height: 100vh;
             display: flex;
-            justify-content: flex-end; /* Wyrównanie do prawej */
+            justify-content: flex-end;
             align-items: center;
             overflow: hidden;
             user-select: none;
-            padding-right: 5%; /* Małe odstępy od krawędzi */
+            padding-right: 5%;
         }
 
         .book-container {
@@ -39,9 +39,9 @@
         }
 
         .book {
-            width: 45vw; /* Responsywny rozmiar - 45% szerokości okna */
-            height: 60vh; /* 60% wysokości okna */
-            min-width: 600px; /* Minimum dla większych ekranów */
+            width: 45vw;
+            height: 60vh;
+            min-width: 600px;
             min-height: 750px;
             position: relative;
             transform-style: preserve-3d;
@@ -57,7 +57,7 @@
             position: absolute;
             width: 100%;
             height: 100%;
-            border-radius: 15px; /* Większe zaokrąglenia */
+            border-radius: 15px;
             transform-style: preserve-3d;
             backface-visibility: hidden;
             pointer-events: auto;
@@ -97,11 +97,20 @@
 
         .page-back {
             transform: rotateY(180deg);
+            position: relative;
+        }
+
+        .soundcard-img {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            max-width: 25%;
+            height: auto;
         }
 
         .page1 {
             transform-origin: left center;
-            transition: transform 0.8s ease-out; /* Dłuższa animacja */
+            transition: transform 0.8s ease-out;
             z-index: 3;
         }
 
@@ -131,7 +140,7 @@
             transform: translate(-50%, -50%);
             display: flex;
             flex-direction: column;
-            gap: 40px; /* Większe odstępy */
+            gap: 40px;
             z-index: 2;
             align-items: center;
         }
@@ -140,7 +149,7 @@
             background: none;
             border: none;
             font-family: 'Apple Garamond', serif;
-            font-size: 48px; /* Większy tekst */
+            font-size: 48px;
             color: #333;
             cursor: url('cursorhover.png') 16 16, pointer;
             text-decoration: none;
@@ -187,13 +196,11 @@
             opacity: 1;
         }
 
-        /* Uproszczona klasa nutek: brak animacji obrotu i zanikania */
         .particle {
             position: absolute;
             font-size: 120px;
             opacity: 1;
-            /* Nie ma animacji CSS */
-            color: #333; /* Standardowy kolor bez kolorów */
+            color: #333;
         }
 
         @media (max-width: 1200px) {
@@ -208,6 +215,11 @@
             }
             .particle {
                 font-size: 100px;
+            }
+            .soundcard-img {
+                max-width: 30%;
+                bottom: 15px;
+                left: 15px;
             }
         }
 
@@ -229,6 +241,11 @@
                 justify-content: center;
                 padding-right: 0;
             }
+            .soundcard-img {
+                max-width: 35%;
+                bottom: 10px;
+                left: 10px;
+            }
         }
     </style>
 </head>
@@ -242,7 +259,9 @@
                 <div class="page-front">
                     <img src="" alt="Logo" class="page1-logo" id="randomLogo">
                 </div>
-                <div class="page-back" id="page1Back"></div>
+                <div class="page-back" id="page1Back">
+                    <img src="SOUNDCARD.png" alt="Soundcard" class="soundcard-img">
+                </div>
             </div>
 
             <div class="page page3" id="page3">
@@ -273,13 +292,11 @@
         audio.loop = true;
 
         const page1 = document.getElementById('page1');
-        const buttonsContainer = document.getElementById('buttonsContainer');
         const musicParticles = document.getElementById('musicParticles');
         const book = document.getElementById('book');
         const swipeHint = document.getElementById('swipeHint');
         const randomLogo = document.getElementById('randomLogo');
 
-        // Ustawienie randomowego logo przy załadowaniu strony
         function setRandomLogo() {
             const logoFiles = ['KZ1.png', 'KZ2.png', 'KZ3.png', 'KZ4.png', 'KZ5.png', 'KZ6.png'];
             const randomIndex = Math.floor(Math.random() * logoFiles.length);
@@ -287,14 +304,12 @@
         }
         setRandomLogo();
 
-        // Funkcja do tworzenia nutek (bez animacji obrotu i fade-out)
         function createMusicParticle() {
             const particle = document.createElement('div');
             particle.classList.add('particle');
             const noteEmojis = ['♪', '♫', '♩', '♬', '𝄞', '𝄢'];
             particle.textContent = noteEmojis[Math.floor(Math.random() * noteEmojis.length)];
             
-            // Pozycjonowanie nutek: pojawiają się, ale nie poruszają się
             const x = Math.random() * (window.innerWidth * 0.3);
             const y = Math.random() * window.innerHeight;
             
@@ -303,7 +318,6 @@
             
             musicParticles.appendChild(particle);
             
-            // Po 1 sekundzie znikają „jak POP”
             setTimeout(() => {
                 if (particle.parentNode) {
                     musicParticles.removeChild(particle);
@@ -312,7 +326,6 @@
         }
 
         function startMusicParticles() {
-            // Nutki pojawiają się co 300ms, bez animacji ruchu
             particleInterval = setInterval(() => {
                 createMusicParticle();
             }, 300);
@@ -325,7 +338,6 @@
             }
         }
 
-        // Odblokowanie odtwarzania muzyki przy pierwszym kliknięciu w książkę
         book.addEventListener('click', () => {
             if (!permissionGranted) {
                 audio.play().then(() => {
@@ -337,7 +349,6 @@
             }
         }, { once: true });
 
-        // Funkcja pokazywania hintu
         function showSwipeHint() {
             if (!isFlipped) {
                 swipeHint.classList.add('show');
@@ -356,19 +367,15 @@
             }
         }
 
-        // Uruchom timer na start
         resetHintTimer();
 
-        // Obsługa przeciągania
         document.addEventListener('mousedown', startDrag);
         document.addEventListener('touchstart', handleTouchStart, { passive: false });
 
         function startDrag(e) {
-            // Reset timer przy każdej interakcji
             resetHintTimer();
             
             if (e.target.classList.contains('btn')) {
-                console.log('Clicked on button - ignoring');
                 return;
             }
             
@@ -397,7 +404,6 @@
             isDragging = true;
             startX = clickX;
             page1.classList.add('dragging');
-            
             page1.style.transition = 'none';
             
             document.addEventListener('mousemove', drag);
@@ -415,10 +421,8 @@
             let rotation;
             
             if (isFlipped) {
-                // Gdy książka jest otwarta - przeciąganie w prawo zamyka (od -180 do 0)
                 rotation = Math.max(-180, Math.min(0, -180 + deltaX * sensitivity));
             } else {
-                // Gdy książka jest zamknięta - przeciąganie w lewo otwiera (od 0 do -180)
                 rotation = Math.max(-180, Math.min(0, deltaX * sensitivity));
             }
             
@@ -430,12 +434,11 @@
             
             isDragging = false;
             page1.classList.remove('dragging');
-            
             page1.style.transition = 'transform 0.8s ease-out';
             
             const clientX = (e.type === 'touchend' && e.changedTouches) ? e.changedTouches[0].clientX : e.clientX;
             const deltaX = clientX - startX;
-            const threshold = 60; // Nieco większy próg dla większej książki
+            const threshold = 60;
             
             if (deltaX < -threshold && !isFlipped) {
                 flipPage();
@@ -500,7 +503,6 @@
             const targetRotation = isFlipped ? -180 : 0;
             page1.style.transition = 'transform 0.6s ease-out';
             page1.style.transform = `rotateY(${targetRotation}deg)`;
-            
             setTimeout(() => {
                 page1.style.transition = '';
             }, 600);
