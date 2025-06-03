@@ -56,8 +56,7 @@
         }
 
         .book-container {
-            perspective: 1500px;
-            transform-style: preserve-3d;
+            /* USUNĘLIŚMY perspective:1500px oraz transform-style: preserve-3d */
             position: absolute;
             right: 5%;
             top: 50%;
@@ -65,12 +64,14 @@
         }
 
         .book {
+            /* TERAZ perspective nakładamy bezpośrednio na .book */
+            perspective: 1500px;
+            transform-style: preserve-3d;
             width: 45vw;
             height: 60vh;
             min-width: 600px;
             min-height: 750px;
             position: relative;
-            transform-style: preserve-3d;
             transform: rotateX(5deg);
             cursor: grab;
         }
@@ -94,6 +95,15 @@
         .page.dragging {
             cursor: grabbing;
             z-index: 1000;
+        }
+
+        .page1 {
+            /* Animacja domyślna i oś obrotu pozostają przy lewej krawędzi */
+            transform-origin: left center;
+            transition: transform 0.8s ease-out;
+            z-index: 3;
+            /* Pomagamy przeglądarce: zoptymalizuj transform */
+            will-change: transform;
         }
 
         .page1 .page-front {
@@ -131,20 +141,6 @@
             position: relative;
         }
 
-        .soundcard-img {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            max-width: 40%;
-            height: auto;
-        }
-
-        .page1 {
-            transform-origin: left center;
-            transition: transform 0.8s ease-out;
-            z-index: 3;
-        }
-
         .page1.flipped {
             transform: rotateY(-180deg);
             z-index: 1;
@@ -162,6 +158,14 @@
         .page3 {
             z-index: 2;
             transform: translateZ(-6px);
+        }
+
+        .soundcard-img {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            max-width: 40%;
+            height: auto;
         }
 
         .buttons-container {
@@ -453,10 +457,8 @@
         document.addEventListener('touchstart', handleTouchStart, { passive: false });
 
         function startDrag(e) {
-            // Reset timer przy każdej interakcji
             resetHintTimer();
             
-            // Jeżeli kliknięto przycisk (btn), to ignorujemy drag
             if (e.target.classList.contains('btn')) {
                 console.log('Clicked on button - ignoring');
                 return;
