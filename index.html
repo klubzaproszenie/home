@@ -19,25 +19,53 @@
 
         html, body {
             cursor: url('cursor1.png') 16 16, auto;
+            height: 100%;
+            width: 100%;
+        }
+
+        body {
+            font-family: 'Apple Garamond', serif;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Losowe tło strony */
+        body {
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
         }
 
-        body {
-            font-family: 'Apple Garamond', serif;
-            min-height: 100vh;
+        /* Overlay przy wejściu */
+        #overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
             display: flex;
-            justify-content: flex-end;
+            justify-content: center;
             align-items: center;
-            overflow: hidden;
-            user-select: none;
-            padding-right: 5%;
+            z-index: 2000;
+            color: #fff;
+            font-size: 48px;
+            animation: reveal 2s ease-out forwards;
+            clip-path: circle(0 at 50% 50%);
+        }
+        @keyframes reveal {
+            to {
+                clip-path: circle(150% at 50% 50%);
+            }
         }
 
         .book-container {
             perspective: 1500px;
             transform-style: preserve-3d;
+            position: absolute;
+            right: 5%;
+            top: 50%;
+            transform: translateY(-50%);
         }
 
         .book {
@@ -64,7 +92,7 @@
             backface-visibility: hidden;
             pointer-events: auto;
         }
-        
+
         .page.dragging {
             cursor: grabbing;
             z-index: 1000;
@@ -76,6 +104,7 @@
             justify-content: center;
             align-items: center;
             border-radius: 15px;
+            position: relative;
             z-index: 3;
         }
 
@@ -102,6 +131,7 @@
             position: relative;
         }
 
+        /* większe rozmiary dla SOUNDCARD.png */
         .soundcard-img {
             position: absolute;
             bottom: 20px;
@@ -182,10 +212,11 @@
             z-index: 1001;
         }
 
+        /* Przesunięcie hintu do prawego rogu książeczki */
         .swipe-hint {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
+            position: absolute;
+            top: 20px;
+            right: 20px;
             font-family: 'Apple Garamond', serif;
             font-size: 24px;
             color: #666;
@@ -203,6 +234,21 @@
             font-size: 120px;
             opacity: 1;
             color: #333;
+        }
+
+        /* Przycisk wyciszania/włączania dźwięku w prawym górnym rogu */
+        #soundToggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.7);
+            border: none;
+            font-family: 'Apple Garamond', serif;
+            font-size: 18px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            z-index: 1002;
         }
 
         @media (max-width: 1200px) {
@@ -223,6 +269,11 @@
                 bottom: 15px;
                 left: 15px;
             }
+            #soundToggle {
+                font-size: 16px;
+                top: 15px;
+                right: 15px;
+            }
         }
 
         @media (max-width: 800px) {
@@ -239,27 +290,34 @@
             .particle {
                 font-size: 80px;
             }
-            body {
-                justify-content: center;
-                padding-right: 0;
-            }
             .soundcard-img {
                 max-width: 50%;
                 bottom: 10px;
                 left: 10px;
             }
+            #soundToggle {
+                font-size: 14px;
+                top: 10px;
+                right: 10px;
+            }
         }
     </style>
 </head>
 <body>
+    <!-- Overlay przy wejściu -->
+    <div id="overlay">nutka tajemnicy...</div>
+
+    <!-- Przycisk wyciszania/włączania dźwięku -->
+    <button id="soundToggle">Sound On</button>
+
     <div class="title-text">Klub Zaproszenie</div>
-    <div class="swipe-hint" id="swipeHint">swipe to open</div>
-    
+
     <div class="book-container">
         <div class="book" id="book">
             <div class="page page1" id="page1">
                 <div class="page-front">
                     <img src="" alt="Logo" class="page1-logo" id="randomLogo">
+                    <div class="swipe-hint" id="swipeHint">swipe to open</div>
                 </div>
                 <div class="page-back" id="page1Back">
                     <img src="SOUNDCARD.png" alt="Soundcard" class="soundcard-img">
@@ -273,9 +331,9 @@
             </div>
 
             <div class="buttons-container" id="buttonsContainer">
-                <button class="btn" onclick="handleButtonClick('archive')">Archive</button>
-                <button class="btn" onclick="handleButtonClick('info')">Info</button>
-                <button class="btn" onclick="handleButtonClick('about')">About</button>
+                <button class="btn" onclick="window.location.href='https://www.instagram.com/klub_zaproszenie/'">Archive</button>
+                <button class="btn" onclick="window.location.href='https://www.instagram.com/klub_zaproszenie/'">Info</button>
+                <button class="btn" onclick="window.location.href='https://www.instagram.com/klub_zaproszenie/'">About</button>
             </div>
         </div>
     </div>
@@ -283,21 +341,30 @@
     <div class="music-particles" id="musicParticles"></div>
 
     <script>
-        // Lista plików tła
+        // Losowe tło przy każdym załadowaniu
         const backgrounds = ['bg1.jpg', 'bg2.jpg', 'bg3.jpg', 'bg4.jpg', 'bg5.jpg'];
-        // Wybierz losowe tło przy każdym odświeżeniu
         const randomBg = backgrounds[Math.floor(Math.random() * backgrounds.length)];
         document.body.style.backgroundImage = `url('${randomBg}')`;
 
-        let isDragging = false;
-        let startX = 0;
-        let currentRotation = 0;
-        let isFlipped = false;
-        let particleInterval;
-        let permissionGranted = false;
-        let hintTimeout;
+        // Usuń overlay po zakończeniu animacji (2s)
+        setTimeout(() => {
+            const overlay = document.getElementById('overlay');
+            if (overlay) {
+                overlay.style.display = 'none';
+            }
+        }, 2000);
+
+        // Toggle dźwięku
+        const soundToggle = document.getElementById('soundToggle');
+        let soundOn = true;
         const audio = new Audio('muza.mp3');
         audio.loop = true;
+
+        soundToggle.addEventListener('click', () => {
+            soundOn = !soundOn;
+            audio.muted = !soundOn;
+            soundToggle.textContent = soundOn ? 'Sound On' : 'Sound Off';
+        });
 
         const page1 = document.getElementById('page1');
         const musicParticles = document.getElementById('musicParticles');
@@ -305,6 +372,7 @@
         const swipeHint = document.getElementById('swipeHint');
         const randomLogo = document.getElementById('randomLogo');
 
+        // Ustawienie logo
         function setRandomLogo() {
             const logoFiles = ['KZ1.png', 'KZ2.png', 'KZ3.png', 'KZ4.png', 'KZ5.png', 'KZ6.png'];
             const randomIndex = Math.floor(Math.random() * logoFiles.length);
@@ -312,6 +380,7 @@
         }
         setRandomLogo();
 
+        // Nutki
         function createMusicParticle() {
             const particle = document.createElement('div');
             particle.classList.add('particle');
@@ -333,6 +402,7 @@
             }, 1000);
         }
 
+        let particleInterval;
         function startMusicParticles() {
             particleInterval = setInterval(() => {
                 createMusicParticle();
@@ -346,17 +416,18 @@
             }
         }
 
-        // Odblokowanie odtwarzania muzyki przy pierwszym kliknięciu w książkę
+        // Aby odblokować odtwarzanie dźwięku na niektórych przeglądarkach
         book.addEventListener('click', () => {
-            if (!permissionGranted) {
-                audio.play().then(() => {
-                    audio.pause();
-                    permissionGranted = true;
-                }).catch(() => {
-                    console.log('Audio autoplay blocked');
-                });
+            if (audio.paused && soundOn) {
+                audio.play().catch(() => {});
             }
         }, { once: true });
+
+        // Hint i flip książki
+        let isDragging = false;
+        let startX = 0;
+        let isFlipped = false;
+        let hintTimeout;
 
         function showSwipeHint() {
             if (!isFlipped) {
@@ -383,11 +454,8 @@
 
         function startDrag(e) {
             resetHintTimer();
-            
-            if (e.target.classList.contains('btn')) {
-                return;
-            }
-            
+            if (e.target.classList.contains('btn')) return;
+
             const bookRect = book.getBoundingClientRect();
             const clickX = (e.type === 'touchstart') ? e.touches[0].clientX : e.clientX;
             const clickY = (e.type === 'touchstart') ? e.touches[0].clientY : e.clientY;
@@ -423,7 +491,6 @@
 
         function drag(e) {
             if (!isDragging) return;
-            
             const clientX = (e.type === 'touchmove') ? e.touches[0].clientX : e.clientX;
             const deltaX = clientX - startX;
             const sensitivity = 0.8;
@@ -434,13 +501,11 @@
             } else {
                 rotation = Math.max(-180, Math.min(0, deltaX * sensitivity));
             }
-            
             page1.style.transform = `rotateY(${rotation}deg)`;
         }
 
         function endDrag(e) {
             if (!isDragging) return;
-            
             isDragging = false;
             page1.classList.remove('dragging');
             page1.style.transition = 'transform 0.8s ease-out';
@@ -448,7 +513,7 @@
             const clientX = (e.type === 'touchend' && e.changedTouches) ? e.changedTouches[0].clientX : e.clientX;
             const deltaX = clientX - startX;
             const threshold = 60;
-            
+
             if (deltaX < -threshold && !isFlipped) {
                 flipPage();
             } else if (deltaX > threshold && isFlipped) {
@@ -456,7 +521,6 @@
             } else {
                 resetPage();
             }
-            
             document.removeEventListener('mousemove', drag);
             document.removeEventListener('mouseup', endDrag);
             document.removeEventListener('touchmove', handleTouchMove);
@@ -480,30 +544,24 @@
 
         function flipPage() {
             isFlipped = true;
-            currentRotation = -180;
             page1.classList.add('flipped');
             page1.style.transform = 'rotateY(-180deg)';
             page1.style.zIndex = '1';
-            
             hideSwipeHint();
             clearTimeout(hintTimeout);
-            
-            if (permissionGranted) {
+            if (soundOn) {
                 audio.currentTime = 0;
-                audio.play();
+                audio.play().catch(() => {});
             }
             startMusicParticles();
         }
 
         function unflipPage() {
             isFlipped = false;
-            currentRotation = 0;
             page1.classList.remove('flipped');
             page1.style.transform = 'rotateY(0deg)';
             page1.style.zIndex = '3';
-            
             resetHintTimer();
-            
             audio.pause();
             stopMusicParticles();
         }
@@ -515,20 +573,6 @@
             setTimeout(() => {
                 page1.style.transition = '';
             }, 600);
-        }
-
-        function handleButtonClick(action) {
-            switch(action) {
-                case 'archive':
-                    alert('Otwieranie archiwum...');
-                    break;
-                case 'info':
-                    alert('Wyświetlanie informacji...');
-                    break;
-                case 'about':
-                    alert('O aplikacji...');
-                    break;
-            }
         }
     </script>
 </body>
