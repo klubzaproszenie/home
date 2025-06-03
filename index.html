@@ -27,16 +27,12 @@
             font-family: 'Apple Garamond', serif;
             overflow: hidden;
             position: relative;
-        }
-
-        /* Losowe tło strony */
-        body {
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
         }
 
-        /* Overlay przy wejściu */
+        /* Overlay przy wejściu: czarne tło z napisem widoczne od razu */
         #overlay {
             position: fixed;
             top: 0;
@@ -50,12 +46,12 @@
             z-index: 2000;
             color: #fff;
             font-size: 48px;
-            animation: reveal 2s ease-out forwards;
-            clip-path: circle(0 at 50% 50%);
+            clip-path: circle(150% at 50% 50%);
+            animation: hideOverlay 2s ease-out forwards 1s;
         }
-        @keyframes reveal {
+        @keyframes hideOverlay {
             to {
-                clip-path: circle(150% at 50% 50%);
+                clip-path: circle(0 at 50% 50%);
             }
         }
 
@@ -91,8 +87,10 @@
             transform-style: preserve-3d;
             backface-visibility: hidden;
             pointer-events: auto;
+            top: 0;
+            left: 0;
         }
-
+        
         .page.dragging {
             cursor: grabbing;
             z-index: 1000;
@@ -124,14 +122,20 @@
             justify-content: center;
             align-items: center;
             backface-visibility: hidden;
+            top: 0;
+            left: 0;
         }
 
         .page-back {
             transform: rotateY(180deg);
             position: relative;
+            z-index: 2;
+        }
+        .page-back, .page-back * {
+            transform-style: preserve-3d;
         }
 
-        /* większe rozmiary dla SOUNDCARD.png */
+        /* Zwiększone rozmiary dla SOUNDCARD.png */
         .soundcard-img {
             position: absolute;
             bottom: 20px;
@@ -150,14 +154,13 @@
             transform: rotateY(-180deg);
             z-index: 1;
         }
-
         .page1.flipped .page-back {
             pointer-events: auto;
             cursor: grab;
+            z-index: 3;
         }
-
-        .page1.flipped .page-back:active {
-            cursor: grabbing;
+        .page1.flipped .page-front {
+            z-index: 1;
         }
 
         .page3 {
@@ -212,7 +215,7 @@
             z-index: 1001;
         }
 
-        /* Przesunięcie hintu do prawego rogu książeczki */
+        /* Przesunięcie hintu do prawego rogu okładki */
         .swipe-hint {
             position: absolute;
             top: 20px;
@@ -346,13 +349,13 @@
         const randomBg = backgrounds[Math.floor(Math.random() * backgrounds.length)];
         document.body.style.backgroundImage = `url('${randomBg}')`;
 
-        // Usuń overlay po zakończeniu animacji (2s)
+        // Usuń overlay po zakończeniu animacji (2s + 1s opóźnienia)
         setTimeout(() => {
             const overlay = document.getElementById('overlay');
             if (overlay) {
                 overlay.style.display = 'none';
             }
-        }, 2000);
+        }, 3000);
 
         // Toggle dźwięku
         const soundToggle = document.getElementById('soundToggle');
@@ -372,7 +375,7 @@
         const swipeHint = document.getElementById('swipeHint');
         const randomLogo = document.getElementById('randomLogo');
 
-        // Ustawienie logo
+        // Ustawienie losowego logo
         function setRandomLogo() {
             const logoFiles = ['KZ1.png', 'KZ2.png', 'KZ3.png', 'KZ4.png', 'KZ5.png', 'KZ6.png'];
             const randomIndex = Math.floor(Math.random() * logoFiles.length);
@@ -380,7 +383,7 @@
         }
         setRandomLogo();
 
-        // Nutki
+        // Funkcja tworzenia nutek
         function createMusicParticle() {
             const particle = document.createElement('div');
             particle.classList.add('particle');
@@ -416,7 +419,7 @@
             }
         }
 
-        // Aby odblokować odtwarzanie dźwięku na niektórych przeglądarkach
+        // Odtwarzanie dźwięku przy pierwszym kliknięciu książki
         book.addEventListener('click', () => {
             if (audio.paused && soundOn) {
                 audio.play().catch(() => {});
