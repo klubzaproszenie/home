@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Klub Zaproszenie</title>
     <style>
         @font-face {
@@ -19,59 +19,34 @@
 
         html, body {
             cursor: url('cursor1.png') 16 16, auto;
-            height: 100%;
-            width: 100%;
-        }
-
-        body {
-            font-family: 'Apple Garamond', serif;
-            overflow: hidden;
-            position: relative;
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
         }
 
-        /* Overlay przy wejściu: czarne tło z napisem widoczne od razu */
-        #overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #000;
+        body {
+            font-family: 'Apple Garamond', serif;
+            min-height: 100vh;
             display: flex;
-            justify-content: center;
+            justify-content: flex-end;
             align-items: center;
-            z-index: 2000;
-            color: #fff;
-            font-size: 48px;
-            clip-path: circle(150% at 50% 50%);
-            animation: hideOverlay 2s ease-out forwards 1s;
-        }
-        @keyframes hideOverlay {
-            to {
-                clip-path: circle(0 at 50% 50%);
-            }
+            overflow: hidden;
+            user-select: none;
+            padding-right: 5%;
         }
 
         .book-container {
-            /* USUNĘLIŚMY perspective:1500px oraz transform-style: preserve-3d */
-            position: absolute;
-            right: 5%;
-            top: 50%;
-            transform: translateY(-50%);
+            perspective: 1500px;
+            transform-style: preserve-3d;
         }
 
         .book {
-            /* TERAZ perspective nakładamy bezpośrednio na .book */
-            perspective: 1500px;
-            transform-style: preserve-3d;
             width: 45vw;
             height: 60vh;
             min-width: 600px;
             min-height: 750px;
             position: relative;
+            transform-style: preserve-3d;
             transform: rotateX(5deg);
             cursor: grab;
         }
@@ -82,8 +57,6 @@
 
         .page {
             position: absolute;
-            top: 0;
-            left: 0;
             width: 100%;
             height: 100%;
             border-radius: 15px;
@@ -91,19 +64,10 @@
             backface-visibility: hidden;
             pointer-events: auto;
         }
-
+        
         .page.dragging {
             cursor: grabbing;
             z-index: 1000;
-        }
-
-        .page1 {
-            /* Animacja domyślna i oś obrotu pozostają przy lewej krawędzi */
-            transform-origin: left center;
-            transition: transform 0.8s ease-out;
-            z-index: 3;
-            /* Pomagamy przeglądarce: zoptymalizuj transform */
-            will-change: transform;
         }
 
         .page1 .page-front {
@@ -113,7 +77,6 @@
             align-items: center;
             border-radius: 15px;
             z-index: 3;
-            position: relative;
         }
 
         .page1-logo {
@@ -124,8 +87,6 @@
 
         .page-front, .page-back {
             position: absolute;
-            top: 0;
-            left: 0;
             width: 100%;
             height: 100%;
             background: #e0e0e0;
@@ -139,6 +100,20 @@
         .page-back {
             transform: rotateY(180deg);
             position: relative;
+        }
+
+        .soundcard-img {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            max-width: 40%;
+            height: auto;
+        }
+
+        .page1 {
+            transform-origin: left center;
+            transition: transform 0.8s ease-out;
+            z-index: 3;
         }
 
         .page1.flipped {
@@ -158,14 +133,6 @@
         .page3 {
             z-index: 2;
             transform: translateZ(-6px);
-        }
-
-        .soundcard-img {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            max-width: 40%;
-            height: auto;
         }
 
         .buttons-container {
@@ -215,11 +182,10 @@
             z-index: 1001;
         }
 
-        /* Przesunięcie hintu do prawego rogu okładki */
         .swipe-hint {
-            position: absolute;
-            top: 20px;
-            right: 20px;
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
             font-family: 'Apple Garamond', serif;
             font-size: 24px;
             color: #666;
@@ -237,21 +203,6 @@
             font-size: 120px;
             opacity: 1;
             color: #333;
-        }
-
-        /* Przycisk wyciszania/włączania dźwięku w prawym górnym rogu */
-        #soundToggle {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: rgba(255, 255, 255, 0.7);
-            border: none;
-            font-family: 'Apple Garamond', serif;
-            font-size: 18px;
-            padding: 8px 12px;
-            border-radius: 8px;
-            cursor: pointer;
-            z-index: 1002;
         }
 
         @media (max-width: 1200px) {
@@ -272,11 +223,6 @@
                 bottom: 15px;
                 left: 15px;
             }
-            #soundToggle {
-                font-size: 16px;
-                top: 15px;
-                right: 15px;
-            }
         }
 
         @media (max-width: 800px) {
@@ -293,34 +239,27 @@
             .particle {
                 font-size: 80px;
             }
+            body {
+                justify-content: center;
+                padding-right: 0;
+            }
             .soundcard-img {
                 max-width: 50%;
                 bottom: 10px;
                 left: 10px;
             }
-            #soundToggle {
-                font-size: 14px;
-                top: 10px;
-                right: 10px;
-            }
         }
     </style>
 </head>
 <body>
-    <!-- Overlay przy wejściu -->
-    <div id="overlay">nutka tajemnicy...</div>
-
-    <!-- Przycisk wyciszania/włączania dźwięku -->
-    <button id="soundToggle">Sound On</button>
-
     <div class="title-text">Klub Zaproszenie</div>
-
+    <div class="swipe-hint" id="swipeHint">swipe to open</div>
+    
     <div class="book-container">
         <div class="book" id="book">
             <div class="page page1" id="page1">
                 <div class="page-front">
                     <img src="" alt="Logo" class="page1-logo" id="randomLogo">
-                    <div class="swipe-hint" id="swipeHint">swipe to open</div>
                 </div>
                 <div class="page-back" id="page1Back">
                     <img src="SOUNDCARD.png" alt="Soundcard" class="soundcard-img">
@@ -334,9 +273,9 @@
             </div>
 
             <div class="buttons-container" id="buttonsContainer">
-                <button class="btn" onclick="window.location.href='https://www.instagram.com/klub_zaproszenie/'">Archive</button>
-                <button class="btn" onclick="window.location.href='https://www.instagram.com/klub_zaproszenie/'">Info</button>
-                <button class="btn" onclick="window.location.href='https://www.instagram.com/klub_zaproszenie/'">About</button>
+                <button class="btn" onclick="handleButtonClick('archive')">Archive</button>
+                <button class="btn" onclick="handleButtonClick('info')">Info</button>
+                <button class="btn" onclick="handleButtonClick('about')">About</button>
             </div>
         </div>
     </div>
@@ -344,30 +283,21 @@
     <div class="music-particles" id="musicParticles"></div>
 
     <script>
-        // Losowe tło przy każdym załadowaniu
+        // Lista plików tła
         const backgrounds = ['bg1.jpg', 'bg2.jpg', 'bg3.jpg', 'bg4.jpg', 'bg5.jpg'];
+        // Wybierz losowe tło przy każdym odświeżeniu
         const randomBg = backgrounds[Math.floor(Math.random() * backgrounds.length)];
         document.body.style.backgroundImage = `url('${randomBg}')`;
 
-        // Usuń overlay po zakończeniu animacji (2s + 1s opóźnienia)
-        setTimeout(() => {
-            const overlay = document.getElementById('overlay');
-            if (overlay) {
-                overlay.style.display = 'none';
-            }
-        }, 3000);
-
-        // Toggle dźwięku
-        const soundToggle = document.getElementById('soundToggle');
-        let soundOn = true;
+        let isDragging = false;
+        let startX = 0;
+        let currentRotation = 0;
+        let isFlipped = false;
+        let particleInterval;
+        let permissionGranted = false;
+        let hintTimeout;
         const audio = new Audio('muza.mp3');
         audio.loop = true;
-
-        soundToggle.addEventListener('click', () => {
-            soundOn = !soundOn;
-            audio.muted = !soundOn;
-            soundToggle.textContent = soundOn ? 'Sound On' : 'Sound Off';
-        });
 
         const page1 = document.getElementById('page1');
         const musicParticles = document.getElementById('musicParticles');
@@ -375,7 +305,6 @@
         const swipeHint = document.getElementById('swipeHint');
         const randomLogo = document.getElementById('randomLogo');
 
-        // Ustawienie losowego logo
         function setRandomLogo() {
             const logoFiles = ['KZ1.png', 'KZ2.png', 'KZ3.png', 'KZ4.png', 'KZ5.png', 'KZ6.png'];
             const randomIndex = Math.floor(Math.random() * logoFiles.length);
@@ -383,7 +312,6 @@
         }
         setRandomLogo();
 
-        // Funkcja tworzenia nutek
         function createMusicParticle() {
             const particle = document.createElement('div');
             particle.classList.add('particle');
@@ -405,7 +333,6 @@
             }, 1000);
         }
 
-        let particleInterval;
         function startMusicParticles() {
             particleInterval = setInterval(() => {
                 createMusicParticle();
@@ -419,18 +346,17 @@
             }
         }
 
-        // Odtwarzanie dźwięku przy pierwszym kliknięciu książki
+        // Odblokowanie odtwarzania muzyki przy pierwszym kliknięciu w książkę
         book.addEventListener('click', () => {
-            if (audio.paused && soundOn) {
-                audio.play().catch(() => {});
+            if (!permissionGranted) {
+                audio.play().then(() => {
+                    audio.pause();
+                    permissionGranted = true;
+                }).catch(() => {
+                    console.log('Audio autoplay blocked');
+                });
             }
         }, { once: true });
-
-        // Hint i flip książki
-        let isDragging = false;
-        let startX = 0;
-        let isFlipped = false;
-        let hintTimeout;
 
         function showSwipeHint() {
             if (!isFlipped) {
@@ -452,7 +378,6 @@
 
         resetHintTimer();
 
-        // OBSŁUGA PRZECIĄGANIA I DOTYKU
         document.addEventListener('mousedown', startDrag);
         document.addEventListener('touchstart', handleTouchStart, { passive: false });
 
@@ -460,7 +385,6 @@
             resetHintTimer();
             
             if (e.target.classList.contains('btn')) {
-                console.log('Clicked on button - ignoring');
                 return;
             }
             
@@ -475,26 +399,13 @@
             const inBookArea = relativeX >= 0 && relativeX <= bookWidth && relativeY >= 0 && relativeY <= bookHeight;
             const inFlippedArea = isFlipped && relativeX < 0 && relativeX > -bookWidth && relativeY > 0 && relativeY < bookHeight;
             
-            console.log('=== START DRAG ATTEMPT ===');
-            console.log(`Click at: X=${Math.round(clickX)}, Y=${Math.round(clickY)}`);
-            console.log(`Relative: X=${Math.round(relativeX)}, Y=${Math.round(relativeY)}`);
-            console.log(`In book area: ${inBookArea}, In flipped area: ${inFlippedArea}`);
-            console.log(`Is flipped: ${isFlipped}`);
-            
             let shouldReact = false;
-            
             if (!isFlipped && inBookArea) {
                 shouldReact = true;
-                console.log('Book closed - reacting to click in book area');
             } else if (isFlipped && (inBookArea || inFlippedArea)) {
                 shouldReact = true;
-                console.log('Book open - reacting to click in book or flipped area');
             }
-            
-            if (!shouldReact) {
-                console.log('Not reacting to this click');
-                return;
-            }
+            if (!shouldReact) return;
             
             e.preventDefault();
             e.stopPropagation();
@@ -503,8 +414,6 @@
             startX = clickX;
             page1.classList.add('dragging');
             page1.style.transition = 'none';
-            
-            console.log('Drag started successfully');
             
             document.addEventListener('mousemove', drag);
             document.addEventListener('mouseup', endDrag);
@@ -521,10 +430,8 @@
             let rotation;
             
             if (isFlipped) {
-                // Książka jest otwarta: przeciąganie w prawo zamyka (od -180 do 0)
                 rotation = Math.max(-180, Math.min(0, -180 + deltaX * sensitivity));
             } else {
-                // Książka jest zamknięta: przeciąganie w lewo otwiera (od 0 do -180)
                 rotation = Math.max(-180, Math.min(0, deltaX * sensitivity));
             }
             
@@ -538,25 +445,15 @@
             page1.classList.remove('dragging');
             page1.style.transition = 'transform 0.8s ease-out';
             
-            const clientX = (e.type === 'touchend' && e.changedTouches) 
-                ? e.changedTouches[0].clientX 
-                : e.clientX;
+            const clientX = (e.type === 'touchend' && e.changedTouches) ? e.changedTouches[0].clientX : e.clientX;
             const deltaX = clientX - startX;
-            const threshold = 60; // Dostosowany próg
-            
-            console.log('Delta X:', deltaX, 'Is flipped:', isFlipped);
+            const threshold = 60;
             
             if (deltaX < -threshold && !isFlipped) {
-                // Przeciągnięcie w lewo przy zamkniętej książce – otwórz
-                console.log('Otwieranie książki (swipe left)');
                 flipPage();
             } else if (deltaX > threshold && isFlipped) {
-                // Przeciągnięcie w prawo przy otwartej książce – zamknij
-                console.log('Zamykanie książki (swipe right)');
                 unflipPage();
             } else {
-                // Zbyt małe przesunięcie – reset
-                console.log('Reset do poprzedniego stanu');
                 resetPage();
             }
             
@@ -583,28 +480,30 @@
 
         function flipPage() {
             isFlipped = true;
+            currentRotation = -180;
             page1.classList.add('flipped');
             page1.style.transform = 'rotateY(-180deg)';
             page1.style.zIndex = '1';
             
-            // Ukryj hint
             hideSwipeHint();
             clearTimeout(hintTimeout);
             
-            if (soundOn) {
+            if (permissionGranted) {
                 audio.currentTime = 0;
-                audio.play().catch(() => {});
+                audio.play();
             }
             startMusicParticles();
         }
 
         function unflipPage() {
             isFlipped = false;
+            currentRotation = 0;
             page1.classList.remove('flipped');
             page1.style.transform = 'rotateY(0deg)';
             page1.style.zIndex = '3';
             
             resetHintTimer();
+            
             audio.pause();
             stopMusicParticles();
         }
@@ -616,6 +515,20 @@
             setTimeout(() => {
                 page1.style.transition = '';
             }, 600);
+        }
+
+        function handleButtonClick(action) {
+            switch(action) {
+                case 'archive':
+                    alert('Otwieranie archiwum...');
+                    break;
+                case 'info':
+                    alert('Wyświetlanie informacji...');
+                    break;
+                case 'about':
+                    alert('O aplikacji...');
+                    break;
+            }
         }
     </script>
 </body>
