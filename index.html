@@ -151,13 +151,6 @@
             text-decoration: underline;
         }
 
-        .corner-grab {
-            display: none;
-        }
-        .corner-grab2 {
-            display: none;
-        }
-
         .music-particles {
             position: fixed;
             top: 0;
@@ -194,56 +187,13 @@
             opacity: 1;
         }
 
+        /* Uproszczona klasa nutek: brak animacji obrotu i zanikania */
         .particle {
             position: absolute;
             font-size: 120px;
-            opacity: 0;
-            animation: float-up 4s ease-out forwards;
+            opacity: 1;
+            /* Nie ma animacji CSS */
             color: #333; /* Standardowy kolor bez kolorów */
-        }
-
-        .brush-mark {
-            position: fixed;
-            width: 32px;
-            height: 32px;
-            background-image: url('cursor.png');
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center;
-            pointer-events: none;
-            z-index: 999;
-            opacity: 0.6;
-            animation: fade-out 3s ease-out forwards;
-        }
-
-        @keyframes float-up {
-            0% {
-                opacity: 1;
-                transform: translateY(0) rotate(0deg) scale(0.5);
-            }
-            50% {
-                opacity: 0.8;
-                transform: translateY(-50px) rotate(180deg) scale(1);
-            }
-            100% {
-                opacity: 0;
-                transform: translateY(-150px) rotate(360deg) scale(0.8);
-            }
-        }
-
-        @keyframes fade-out {
-            0% {
-                opacity: 0.6;
-                transform: scale(1);
-            }
-            70% {
-                opacity: 0.4;
-                transform: scale(0.9);
-            }
-            100% {
-                opacity: 0;
-                transform: scale(0.7);
-            }
         }
 
         @media (max-width: 1200px) {
@@ -319,7 +269,6 @@
         let particleInterval;
         let permissionGranted = false;
         let hintTimeout;
-        let brushMarks = [];
         const audio = new Audio('muza.wav');
         audio.loop = true;
 
@@ -336,68 +285,16 @@
             const randomIndex = Math.floor(Math.random() * logoFiles.length);
             randomLogo.src = logoFiles[randomIndex];
         }
-
-        // Wywołaj funkcję przy załadowaniu strony
         setRandomLogo();
 
-        // Funkcja do tworzenia śladów pędzla
-        function createBrushMark(x, y) {
-            const brushMark = document.createElement('div');
-            brushMark.classList.add('brush-mark');
-            brushMark.style.left = (x - 16) + 'px'; // Centrowanie względem kursora
-            brushMark.style.top = (y - 16) + 'px';
-            
-            document.body.appendChild(brushMark);
-            brushMarks.push(brushMark);
-            
-            // Usuń element po zakończeniu animacji
-            setTimeout(() => {
-                if (brushMark.parentNode) {
-                    brushMark.remove();
-                }
-                // Usuń z tablicy
-                const index = brushMarks.indexOf(brushMark);
-                if (index > -1) {
-                    brushMarks.splice(index, 1);
-                }
-            }, 3000);
-        }
-
-        // Obsługa ruchu myszy dla efektu pędzla
-        let lastBrushTime = 0;
-        document.addEventListener('mousemove', (e) => {
-            const currentTime = Date.now();
-            // Twórz ślad co 100ms (aby nie było zbyt intensywne)
-            if (currentTime - lastBrushTime > 100) {
-                createBrushMark(e.clientX, e.clientY);
-                lastBrushTime = currentTime;
-            }
-            
-            // Zachowaj oryginalną funkcję logowania
-            logMousePosition(e);
-        });
-
-        function startMusicParticles() {
-            // Nutki pojawiają się po lewej stronie okna przeglądarki
-            particleInterval = setInterval(() => {
-                createMusicParticle();
-            }, 300); // Częściej pojawiające się nutki
-        }
-
-        function stopMusicParticles() {
-            if (particleInterval) {
-                clearInterval(particleInterval);
-                particleInterval = null;
-            }
-        }
-
+        // Funkcja do tworzenia nutek (bez animacji obrotu i fade-out)
         function createMusicParticle() {
             const particle = document.createElement('div');
             particle.classList.add('particle');
             const noteEmojis = ['♪', '♫', '♩', '♬', '𝄞', '𝄢'];
             particle.textContent = noteEmojis[Math.floor(Math.random() * noteEmojis.length)];
             
-            // Nutki po lewej stronie okna (0-30% szerokości okna)
+            // Pozycjonowanie nutek: pojawiają się, ale nie poruszają się
             const x = Math.random() * (window.innerWidth * 0.3);
             const y = Math.random() * window.innerHeight;
             
@@ -405,11 +302,27 @@
             particle.style.top = y + 'px';
             
             musicParticles.appendChild(particle);
+            
+            // Po 1 sekundzie znikają „jak POP”
             setTimeout(() => {
                 if (particle.parentNode) {
-                    particle.remove();
+                    musicParticles.removeChild(particle);
                 }
-            }, 4000);
+            }, 1000);
+        }
+
+        function startMusicParticles() {
+            // Nutki pojawiają się co 300ms, bez animacji ruchu
+            particleInterval = setInterval(() => {
+                createMusicParticle();
+            }, 300);
+        }
+
+        function stopMusicParticles() {
+            if (particleInterval) {
+                clearInterval(particleInterval);
+                particleInterval = null;
+            }
         }
 
         // Odblokowanie odtwarzania muzyki przy pierwszym kliknięciu w książkę
@@ -446,47 +359,6 @@
         // Uruchom timer na start
         resetHintTimer();
 
-        // Dodajemy event listener do śledzenia pozycji myszy
-        document.addEventListener('click', logClickPosition);
-
-        function logMousePosition(e) {
-            const bookRect = book.getBoundingClientRect();
-            const mouseX = e.clientX;
-            const mouseY = e.clientY;
-            const relativeX = mouseX - bookRect.left;
-            const relativeY = mouseY - bookRect.top;
-            const bookWidth = bookRect.width;
-            const bookHeight = bookRect.height;
-            
-            const inFlippedArea = isFlipped && relativeX < 0 && relativeX > -bookWidth && relativeY > 0 && relativeY < bookHeight;
-            
-            if (!window.lastLogTime || Date.now() - window.lastLogTime > 100) {
-                console.log(`Mouse: X=${Math.round(mouseX)}, Y=${Math.round(mouseY)} | Relative: X=${Math.round(relativeX)}, Y=${Math.round(relativeY)} | Book: ${Math.round(bookWidth)}x${Math.round(bookHeight)} | IsFlipped: ${isFlipped} | InFlippedArea: ${inFlippedArea}`);
-                window.lastLogTime = Date.now();
-            }
-        }
-
-        function logClickPosition(e) {
-            const bookRect = book.getBoundingClientRect();
-            const clickX = e.clientX;
-            const clickY = e.clientY;
-            const relativeX = clickX - bookRect.left;
-            const relativeY = clickY - bookRect.top;
-            const bookWidth = bookRect.width;
-            const bookHeight = bookRect.height;
-            const leftSide = relativeX < bookWidth * 0.5;
-            const inFlippedArea = isFlipped && relativeX < 0 && relativeX > -bookWidth && relativeY > 0 && relativeY < bookHeight;
-            
-            console.log('=== CLICK ===');
-            console.log(`Click: X=${Math.round(clickX)}, Y=${Math.round(clickY)}`);
-            console.log(`Relative: X=${Math.round(relativeX)}, Y=${Math.round(relativeY)}`);
-            console.log(`Book size: ${Math.round(bookWidth)}x${Math.round(bookHeight)}`);
-            console.log(`Left side: ${leftSide}, Is flipped: ${isFlipped}`);
-            console.log(`In flipped area: ${inFlippedArea}`);
-            console.log(`Should work: ${isFlipped ? (leftSide || inFlippedArea) : true}`);
-            console.log('============');
-        }
-
         // Obsługa przeciągania
         document.addEventListener('mousedown', startDrag);
         document.addEventListener('touchstart', handleTouchStart, { passive: false });
@@ -511,26 +383,13 @@
             const inBookArea = relativeX >= 0 && relativeX <= bookWidth && relativeY >= 0 && relativeY <= bookHeight;
             const inFlippedArea = isFlipped && relativeX < 0 && relativeX > -bookWidth && relativeY > 0 && relativeY < bookHeight;
             
-            console.log('=== START DRAG ATTEMPT ===');
-            console.log(`Click at: X=${Math.round(clickX)}, Y=${Math.round(clickY)}`);
-            console.log(`Relative: X=${Math.round(relativeX)}, Y=${Math.round(relativeY)}`);
-            console.log(`In book area: ${inBookArea}, In flipped area: ${inFlippedArea}`);
-            console.log(`Is flipped: ${isFlipped}`);
-            
             let shouldReact = false;
-            
             if (!isFlipped && inBookArea) {
                 shouldReact = true;
-                console.log('Book closed - reacting to click in book area');
             } else if (isFlipped && (inBookArea || inFlippedArea)) {
                 shouldReact = true;
-                console.log('Book open - reacting to click in book or flipped area');
             }
-            
-            if (!shouldReact) {
-                console.log('Not reacting to this click');
-                return;
-            }
+            if (!shouldReact) return;
             
             e.preventDefault();
             e.stopPropagation();
@@ -540,8 +399,6 @@
             page1.classList.add('dragging');
             
             page1.style.transition = 'none';
-            
-            console.log('Drag started successfully');
             
             document.addEventListener('mousemove', drag);
             document.addEventListener('mouseup', endDrag);
@@ -562,7 +419,6 @@
                 rotation = Math.max(-180, Math.min(0, -180 + deltaX * sensitivity));
             } else {
                 // Gdy książka jest zamknięta - przeciąganie w lewo otwiera (od 0 do -180)
-                // POPRAWKA: zmieniamy znak, żeby swipe w lewo otwierał książkę
                 rotation = Math.max(-180, Math.min(0, deltaX * sensitivity));
             }
             
@@ -581,19 +437,11 @@
             const deltaX = clientX - startX;
             const threshold = 60; // Nieco większy próg dla większej książki
             
-            console.log('Delta X:', deltaX, 'Is flipped:', isFlipped);
-            
-            // POPRAWKA: Zmieniamy logikę sprawdzania kierunku
             if (deltaX < -threshold && !isFlipped) {
-                // Przeciągnięcie w lewo - otwórz książkę
-                console.log('Otwieranie książki (swipe left)');
                 flipPage();
             } else if (deltaX > threshold && isFlipped) {
-                // Przeciągnięcie w prawo - zamknij książkę
-                console.log('Zamykanie książki (swipe right)');
                 unflipPage();
             } else {
-                console.log('Reset do poprzedniego stanu');
                 resetPage();
             }
             
@@ -625,7 +473,6 @@
             page1.style.transform = 'rotateY(-180deg)';
             page1.style.zIndex = '1';
             
-            // Ukryj hint gdy książka się otwiera
             hideSwipeHint();
             clearTimeout(hintTimeout);
             
@@ -643,7 +490,6 @@
             page1.style.transform = 'rotateY(0deg)';
             page1.style.zIndex = '3';
             
-            // Uruchom timer ponownie gdy książka się zamyka
             resetHintTimer();
             
             audio.pause();
@@ -661,7 +507,6 @@
         }
 
         function handleButtonClick(action) {
-            console.log(`Kliknięto: ${action}`);
             switch(action) {
                 case 'archive':
                     alert('Otwieranie archiwum...');
