@@ -81,14 +81,14 @@
 
         .page {
             position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
             border-radius: 15px;
             transform-style: preserve-3d;
             backface-visibility: hidden;
             pointer-events: auto;
-            top: 0;
-            left: 0;
         }
         
         .page.dragging {
@@ -102,8 +102,8 @@
             justify-content: center;
             align-items: center;
             border-radius: 15px;
-            position: relative;
             z-index: 3;
+            position: relative;
         }
 
         .page1-logo {
@@ -114,6 +114,8 @@
 
         .page-front, .page-back {
             position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
             background: #e0e0e0;
@@ -122,20 +124,13 @@
             justify-content: center;
             align-items: center;
             backface-visibility: hidden;
-            top: 0;
-            left: 0;
         }
 
         .page-back {
             transform: rotateY(180deg);
             position: relative;
-            z-index: 2;
-        }
-        .page-back, .page-back * {
-            transform-style: preserve-3d;
         }
 
-        /* Zwiększone rozmiary dla SOUNDCARD.png */
         .soundcard-img {
             position: absolute;
             bottom: 20px;
@@ -154,13 +149,14 @@
             transform: rotateY(-180deg);
             z-index: 1;
         }
+
         .page1.flipped .page-back {
             pointer-events: auto;
             cursor: grab;
-            z-index: 3;
         }
-        .page1.flipped .page-front {
-            z-index: 1;
+
+        .page1.flipped .page-back:active {
+            cursor: grabbing;
         }
 
         .page3 {
