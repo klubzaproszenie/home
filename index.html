@@ -19,11 +19,13 @@
 
         html, body {
             cursor: url('cursor1.png') 16 16, auto;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
         }
 
         body {
             font-family: 'Apple Garamond', serif;
-            background: #cccccc;
             min-height: 100vh;
             display: flex;
             justify-content: flex-end;
@@ -100,7 +102,6 @@
             position: relative;
         }
 
-        /* Zwiększone rozmiary dla SOUNDCARD.png */
         .soundcard-img {
             position: absolute;
             bottom: 20px;
@@ -282,6 +283,12 @@
     <div class="music-particles" id="musicParticles"></div>
 
     <script>
+        // Lista plików tła
+        const backgrounds = ['bg1.jpg', 'bg2.jpg', 'bg3.jpg', 'bg4.jpg', 'bg5.jpg'];
+        // Wybierz losowe tło przy każdym odświeżeniu
+        const randomBg = backgrounds[Math.floor(Math.random() * backgrounds.length)];
+        document.body.style.backgroundImage = `url('${randomBg}')`;
+
         let isDragging = false;
         let startX = 0;
         let currentRotation = 0;
@@ -339,6 +346,7 @@
             }
         }
 
+        // Odblokowanie odtwarzania muzyki przy pierwszym kliknięciu w książkę
         book.addEventListener('click', () => {
             if (!permissionGranted) {
                 audio.play().then(() => {
