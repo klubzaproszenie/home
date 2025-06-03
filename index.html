@@ -26,28 +26,27 @@
             background: #cccccc;
             min-height: 100vh;
             display: flex;
-            justify-content: flex-end; /* wyrównanie książki do prawej */
+            justify-content: flex-end; /* Wyrównanie do prawej */
             align-items: center;
             overflow: hidden;
             user-select: none;
-            padding-right: 2vw; /* mały margines od prawej krawędzi */
+            padding-right: 5%; /* Małe odstępy od krawędzi */
         }
 
         .book-container {
-            perspective: 1200px;
+            perspective: 1500px;
             transform-style: preserve-3d;
         }
 
         .book {
-            /* Duży, responsywny rozmiar: 60vw szerokości, wysokość proporcjonalna */
-            width: 60vw;
-            height: calc(60vw * 1.126); /* 1.126 = 563 / 500 */
+            width: 45vw; /* Responsywny rozmiar - 45% szerokości okna */
+            height: 60vh; /* 60% wysokości okna */
+            min-width: 600px; /* Minimum dla większych ekranów */
+            min-height: 750px;
             position: relative;
             transform-style: preserve-3d;
             transform: rotateX(5deg);
             cursor: grab;
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5); /* efekt „pop” */
-            border-radius: 12px;
         }
 
         .book:active {
@@ -58,12 +57,12 @@
             position: absolute;
             width: 100%;
             height: 100%;
-            border-radius: 10px;
+            border-radius: 15px; /* Większe zaokrąglenia */
             transform-style: preserve-3d;
             backface-visibility: hidden;
             pointer-events: auto;
         }
-
+        
         .page.dragging {
             cursor: grabbing;
             z-index: 1000;
@@ -74,7 +73,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            border-radius: 10px;
+            border-radius: 15px;
             z-index: 3;
         }
 
@@ -84,13 +83,12 @@
             object-fit: contain;
         }
 
-        .page-front,
-        .page-back {
+        .page-front, .page-back {
             position: absolute;
             width: 100%;
             height: 100%;
             background: #e0e0e0;
-            border-radius: 10px;
+            border-radius: 15px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -102,8 +100,8 @@
         }
 
         .page1 {
-            transform-origin: right center; /* zmieniono na prawy brzeg */
-            transition: transform 0.6s ease-out;
+            transform-origin: left center;
+            transition: transform 0.8s ease-out; /* Dłuższa animacja */
             z-index: 3;
         }
 
@@ -112,18 +110,18 @@
             z-index: 1;
         }
 
-        /* gdy ksiazka jest otwarta, tylna strona okładki reaguje na klik */
         .page1.flipped .page-back {
             pointer-events: auto;
             cursor: grab;
         }
+
         .page1.flipped .page-back:active {
             cursor: grabbing;
         }
 
         .page3 {
             z-index: 2;
-            transform: translateZ(-4px);
+            transform: translateZ(-6px);
         }
 
         .buttons-container {
@@ -133,7 +131,7 @@
             transform: translate(-50%, -50%);
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 40px; /* Większe odstępy */
             z-index: 2;
             align-items: center;
         }
@@ -142,7 +140,7 @@
             background: none;
             border: none;
             font-family: 'Apple Garamond', serif;
-            font-size: 36px;
+            font-size: 48px; /* Większy tekst */
             color: #333;
             cursor: url('cursorhover.png') 16 16, pointer;
             text-decoration: none;
@@ -153,7 +151,9 @@
             text-decoration: underline;
         }
 
-        .corner-grab,
+        .corner-grab {
+            display: none;
+        }
         .corner-grab2 {
             display: none;
         }
@@ -168,44 +168,129 @@
             z-index: 1000;
         }
 
+        .title-text {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            font-family: 'Apple Garamond', serif;
+            font-size: 32px;
+            color: #333;
+            z-index: 1001;
+        }
+
+        .swipe-hint {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            font-family: 'Apple Garamond', serif;
+            font-size: 24px;
+            color: #666;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+            z-index: 1001;
+        }
+
+        .swipe-hint.show {
+            opacity: 1;
+        }
+
         .particle {
             position: absolute;
-            font-size: 80px; /* większe nutki */
+            font-size: 120px;
             opacity: 0;
-            animation: float-up 3s ease-out forwards;
+            animation: float-up 4s ease-out forwards;
+            color: #333; /* Standardowy kolor bez kolorów */
+        }
+
+        .brush-mark {
+            position: fixed;
+            width: 32px;
+            height: 32px;
+            background-image: url('cursor.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            pointer-events: none;
+            z-index: 999;
+            opacity: 0.6;
+            animation: fade-out 3s ease-out forwards;
         }
 
         @keyframes float-up {
             0% {
                 opacity: 1;
-                transform: translateY(0) rotate(0deg);
+                transform: translateY(0) rotate(0deg) scale(0.5);
+            }
+            50% {
+                opacity: 0.8;
+                transform: translateY(-50px) rotate(180deg) scale(1);
             }
             100% {
                 opacity: 0;
-                transform: translateY(-150px) rotate(360deg);
+                transform: translateY(-150px) rotate(360deg) scale(0.8);
+            }
+        }
+
+        @keyframes fade-out {
+            0% {
+                opacity: 0.6;
+                transform: scale(1);
+            }
+            70% {
+                opacity: 0.4;
+                transform: scale(0.9);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(0.7);
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .book {
+                width: 50vw;
+                height: 65vh;
+                min-width: 500px;
+                min-height: 650px;
+            }
+            .btn {
+                font-size: 40px;
+            }
+            .particle {
+                font-size: 100px;
             }
         }
 
         @media (max-width: 800px) {
             .book {
-                width: 80vw;
-                height: calc(80vw * 1.126);
+                width: 70vw;
+                height: 70vh;
+                min-width: 400px;
+                min-height: 500px;
             }
             .btn {
-                font-size: 28px;
+                font-size: 32px;
+                gap: 30px;
             }
             .particle {
-                font-size: 60px;
+                font-size: 80px;
+            }
+            body {
+                justify-content: center;
+                padding-right: 0;
             }
         }
     </style>
 </head>
 <body>
+    <div class="title-text">Klub Zaproszenie</div>
+    <div class="swipe-hint" id="swipeHint">swipe to open</div>
+    
     <div class="book-container">
         <div class="book" id="book">
             <div class="page page1" id="page1">
                 <div class="page-front">
-                    <img src="logo.png" alt="Logo" class="page1-logo">
+                    <img src="" alt="Logo" class="page1-logo" id="randomLogo">
                 </div>
                 <div class="page-back" id="page1Back"></div>
             </div>
@@ -233,6 +318,8 @@
         let isFlipped = false;
         let particleInterval;
         let permissionGranted = false;
+        let hintTimeout;
+        let brushMarks = [];
         const audio = new Audio('muza.wav');
         audio.loop = true;
 
@@ -240,11 +327,61 @@
         const buttonsContainer = document.getElementById('buttonsContainer');
         const musicParticles = document.getElementById('musicParticles');
         const book = document.getElementById('book');
+        const swipeHint = document.getElementById('swipeHint');
+        const randomLogo = document.getElementById('randomLogo');
+
+        // Ustawienie randomowego logo przy załadowaniu strony
+        function setRandomLogo() {
+            const logoFiles = ['KZ1.png', 'KZ2.png', 'KZ3.png', 'KZ4.png', 'KZ5.png', 'KZ6.png'];
+            const randomIndex = Math.floor(Math.random() * logoFiles.length);
+            randomLogo.src = logoFiles[randomIndex];
+        }
+
+        // Wywołaj funkcję przy załadowaniu strony
+        setRandomLogo();
+
+        // Funkcja do tworzenia śladów pędzla
+        function createBrushMark(x, y) {
+            const brushMark = document.createElement('div');
+            brushMark.classList.add('brush-mark');
+            brushMark.style.left = (x - 16) + 'px'; // Centrowanie względem kursora
+            brushMark.style.top = (y - 16) + 'px';
+            
+            document.body.appendChild(brushMark);
+            brushMarks.push(brushMark);
+            
+            // Usuń element po zakończeniu animacji
+            setTimeout(() => {
+                if (brushMark.parentNode) {
+                    brushMark.remove();
+                }
+                // Usuń z tablicy
+                const index = brushMarks.indexOf(brushMark);
+                if (index > -1) {
+                    brushMarks.splice(index, 1);
+                }
+            }, 3000);
+        }
+
+        // Obsługa ruchu myszy dla efektu pędzla
+        let lastBrushTime = 0;
+        document.addEventListener('mousemove', (e) => {
+            const currentTime = Date.now();
+            // Twórz ślad co 100ms (aby nie było zbyt intensywne)
+            if (currentTime - lastBrushTime > 100) {
+                createBrushMark(e.clientX, e.clientY);
+                lastBrushTime = currentTime;
+            }
+            
+            // Zachowaj oryginalną funkcję logowania
+            logMousePosition(e);
+        });
 
         function startMusicParticles() {
+            // Nutki pojawiają się po lewej stronie okna przeglądarki
             particleInterval = setInterval(() => {
                 createMusicParticle();
-            }, 500);
+            }, 300); // Częściej pojawiające się nutki
         }
 
         function stopMusicParticles() {
@@ -257,19 +394,22 @@
         function createMusicParticle() {
             const particle = document.createElement('div');
             particle.classList.add('particle');
-            const noteEmojis = ['♪', '♫', '♩', '♬'];
+            const noteEmojis = ['♪', '♫', '♩', '♬', '𝄞', '𝄢'];
             particle.textContent = noteEmojis[Math.floor(Math.random() * noteEmojis.length)];
-            // Pojawiają się po lewej stronie przeglądarki:
-            const x = Math.random() * (window.innerWidth * 0.2); // lewa 20% szerokości
-            const y = window.innerHeight + 20; // zaczynają nieco poza dolną krawędzią
+            
+            // Nutki po lewej stronie okna (0-30% szerokości okna)
+            const x = Math.random() * (window.innerWidth * 0.3);
+            const y = Math.random() * window.innerHeight;
+            
             particle.style.left = x + 'px';
             particle.style.top = y + 'px';
+            
             musicParticles.appendChild(particle);
             setTimeout(() => {
                 if (particle.parentNode) {
                     particle.remove();
                 }
-            }, 3000);
+            }, 4000);
         }
 
         // Odblokowanie odtwarzania muzyki przy pierwszym kliknięciu w książkę
@@ -284,7 +424,29 @@
             }
         }, { once: true });
 
-        document.addEventListener('mousemove', logMousePosition);
+        // Funkcja pokazywania hintu
+        function showSwipeHint() {
+            if (!isFlipped) {
+                swipeHint.classList.add('show');
+            }
+        }
+
+        function hideSwipeHint() {
+            swipeHint.classList.remove('show');
+        }
+
+        function resetHintTimer() {
+            clearTimeout(hintTimeout);
+            hideSwipeHint();
+            if (!isFlipped) {
+                hintTimeout = setTimeout(showSwipeHint, 7000);
+            }
+        }
+
+        // Uruchom timer na start
+        resetHintTimer();
+
+        // Dodajemy event listener do śledzenia pozycji myszy
         document.addEventListener('click', logClickPosition);
 
         function logMousePosition(e) {
@@ -295,11 +457,9 @@
             const relativeY = mouseY - bookRect.top;
             const bookWidth = bookRect.width;
             const bookHeight = bookRect.height;
-            const inFlippedArea = isFlipped &&
-                                   relativeX < 0 &&
-                                   relativeX > -bookWidth &&
-                                   relativeY > 0 &&
-                                   relativeY < bookHeight;
+            
+            const inFlippedArea = isFlipped && relativeX < 0 && relativeX > -bookWidth && relativeY > 0 && relativeY < bookHeight;
+            
             if (!window.lastLogTime || Date.now() - window.lastLogTime > 100) {
                 console.log(`Mouse: X=${Math.round(mouseX)}, Y=${Math.round(mouseY)} | Relative: X=${Math.round(relativeX)}, Y=${Math.round(relativeY)} | Book: ${Math.round(bookWidth)}x${Math.round(bookHeight)} | IsFlipped: ${isFlipped} | InFlippedArea: ${inFlippedArea}`);
                 window.lastLogTime = Date.now();
@@ -315,11 +475,8 @@
             const bookWidth = bookRect.width;
             const bookHeight = bookRect.height;
             const leftSide = relativeX < bookWidth * 0.5;
-            const inFlippedArea = isFlipped &&
-                                   relativeX < 0 &&
-                                   relativeX > -bookWidth &&
-                                   relativeY > 0 &&
-                                   relativeY < bookHeight;
+            const inFlippedArea = isFlipped && relativeX < 0 && relativeX > -bookWidth && relativeY > 0 && relativeY < bookHeight;
+            
             console.log('=== CLICK ===');
             console.log(`Click: X=${Math.round(clickX)}, Y=${Math.round(clickY)}`);
             console.log(`Relative: X=${Math.round(relativeX)}, Y=${Math.round(relativeY)}`);
@@ -330,15 +487,19 @@
             console.log('============');
         }
 
+        // Obsługa przeciągania
         document.addEventListener('mousedown', startDrag);
         document.addEventListener('touchstart', handleTouchStart, { passive: false });
 
         function startDrag(e) {
+            // Reset timer przy każdej interakcji
+            resetHintTimer();
+            
             if (e.target.classList.contains('btn')) {
                 console.log('Clicked on button - ignoring');
                 return;
             }
-
+            
             const bookRect = book.getBoundingClientRect();
             const clickX = (e.type === 'touchstart') ? e.touches[0].clientX : e.clientX;
             const clickY = (e.type === 'touchstart') ? e.touches[0].clientY : e.clientY;
@@ -346,21 +507,18 @@
             const relativeY = clickY - bookRect.top;
             const bookWidth = bookRect.width;
             const bookHeight = bookRect.height;
-
-            const inBookArea = (relativeX >= 0 && relativeX <= bookWidth && relativeY >= 0 && relativeY <= bookHeight);
-            const inFlippedArea = isFlipped &&
-                                   relativeX < 0 &&
-                                   relativeX > -bookWidth &&
-                                   relativeY > 0 &&
-                                   relativeY < bookHeight;
-
+            
+            const inBookArea = relativeX >= 0 && relativeX <= bookWidth && relativeY >= 0 && relativeY <= bookHeight;
+            const inFlippedArea = isFlipped && relativeX < 0 && relativeX > -bookWidth && relativeY > 0 && relativeY < bookHeight;
+            
             console.log('=== START DRAG ATTEMPT ===');
             console.log(`Click at: X=${Math.round(clickX)}, Y=${Math.round(clickY)}`);
             console.log(`Relative: X=${Math.round(relativeX)}, Y=${Math.round(relativeY)}`);
             console.log(`In book area: ${inBookArea}, In flipped area: ${inFlippedArea}`);
             console.log(`Is flipped: ${isFlipped}`);
-
+            
             let shouldReact = false;
+            
             if (!isFlipped && inBookArea) {
                 shouldReact = true;
                 console.log('Book closed - reacting to click in book area');
@@ -368,23 +526,23 @@
                 shouldReact = true;
                 console.log('Book open - reacting to click in book or flipped area');
             }
-
+            
             if (!shouldReact) {
                 console.log('Not reacting to this click');
                 return;
             }
-
+            
             e.preventDefault();
             e.stopPropagation();
-
+            
             isDragging = true;
             startX = clickX;
             page1.classList.add('dragging');
-
+            
             page1.style.transition = 'none';
-
+            
             console.log('Drag started successfully');
-
+            
             document.addEventListener('mousemove', drag);
             document.addEventListener('mouseup', endDrag);
             document.addEventListener('touchmove', handleTouchMove, { passive: false });
@@ -393,48 +551,52 @@
 
         function drag(e) {
             if (!isDragging) return;
-
+            
             const clientX = (e.type === 'touchmove') ? e.touches[0].clientX : e.clientX;
             const deltaX = clientX - startX;
-            const sensitivity = 0.7;
+            const sensitivity = 0.8;
             let rotation;
-
+            
             if (isFlipped) {
-                // Kartka jest otwarta – przeciągnięcie w prawo zamyka (od -180 do 0)
+                // Gdy książka jest otwarta - przeciąganie w prawo zamyka (od -180 do 0)
                 rotation = Math.max(-180, Math.min(0, -180 + deltaX * sensitivity));
             } else {
-                // Kartka jest zamknięta – przeciągnięcie w lewo otwiera (od 0 do -180)
+                // Gdy książka jest zamknięta - przeciąganie w lewo otwiera (od 0 do -180)
+                // POPRAWKA: zmieniamy znak, żeby swipe w lewo otwierał książkę
                 rotation = Math.max(-180, Math.min(0, deltaX * sensitivity));
             }
-
+            
             page1.style.transform = `rotateY(${rotation}deg)`;
         }
 
         function endDrag(e) {
             if (!isDragging) return;
-
+            
             isDragging = false;
             page1.classList.remove('dragging');
-
-            page1.style.transition = 'transform 0.6s ease-out';
-
+            
+            page1.style.transition = 'transform 0.8s ease-out';
+            
             const clientX = (e.type === 'touchend' && e.changedTouches) ? e.changedTouches[0].clientX : e.clientX;
             const deltaX = clientX - startX;
-            const threshold = 50;
-
+            const threshold = 60; // Nieco większy próg dla większej książki
+            
             console.log('Delta X:', deltaX, 'Is flipped:', isFlipped);
-
+            
+            // POPRAWKA: Zmieniamy logikę sprawdzania kierunku
             if (deltaX < -threshold && !isFlipped) {
-                console.log('Otwieranie książki');
+                // Przeciągnięcie w lewo - otwórz książkę
+                console.log('Otwieranie książki (swipe left)');
                 flipPage();
             } else if (deltaX > threshold && isFlipped) {
-                console.log('Zamykanie książki');
+                // Przeciągnięcie w prawo - zamknij książkę
+                console.log('Zamykanie książki (swipe right)');
                 unflipPage();
             } else {
                 console.log('Reset do poprzedniego stanu');
                 resetPage();
             }
-
+            
             document.removeEventListener('mousemove', drag);
             document.removeEventListener('mouseup', endDrag);
             document.removeEventListener('touchmove', handleTouchMove);
@@ -458,10 +620,15 @@
 
         function flipPage() {
             isFlipped = true;
+            currentRotation = -180;
             page1.classList.add('flipped');
             page1.style.transform = 'rotateY(-180deg)';
             page1.style.zIndex = '1';
-
+            
+            // Ukryj hint gdy książka się otwiera
+            hideSwipeHint();
+            clearTimeout(hintTimeout);
+            
             if (permissionGranted) {
                 audio.currentTime = 0;
                 audio.play();
@@ -471,22 +638,26 @@
 
         function unflipPage() {
             isFlipped = false;
+            currentRotation = 0;
             page1.classList.remove('flipped');
             page1.style.transform = 'rotateY(0deg)';
             page1.style.zIndex = '3';
-
+            
+            // Uruchom timer ponownie gdy książka się zamyka
+            resetHintTimer();
+            
             audio.pause();
             stopMusicParticles();
         }
 
         function resetPage() {
             const targetRotation = isFlipped ? -180 : 0;
-            page1.style.transition = 'transform 0.4s ease-out';
+            page1.style.transition = 'transform 0.6s ease-out';
             page1.style.transform = `rotateY(${targetRotation}deg)`;
-
+            
             setTimeout(() => {
                 page1.style.transition = '';
-            }, 400);
+            }, 600);
         }
 
         function handleButtonClick(action) {
