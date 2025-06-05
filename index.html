@@ -28,11 +28,11 @@
             font-family: 'Apple Garamond', serif;
             min-height: 100vh;
             display: flex;
-            justify-content: flex-end;
-            align-items: center;
+            justify-content: center; /* Wyśrodkowanie poziome */
+            align-items: center;     /* Wyśrodkowanie pionowe */
             overflow: hidden;
             user-select: none;
-            padding-right: 5%;
+            /* padding-right: 5%; */  /* Usunięte, bo książeczka jest wyśrodkowana */
         }
 
         .book-container {
@@ -41,10 +41,11 @@
         }
 
         .book {
-            width: 45vw;
-            height: 60vh;
-            min-width: 600px;
-            min-height: 750px;
+            /* DWUKROTNIE MNIEJSZY ROZMIAR */
+            width: 22.5vw;    /* połowa z 45vw */
+            height: 30vh;     /* połowa z 60vh */
+            min-width: 300px;  /* połowa z 600px */
+            min-height: 375px; /* połowa z 750px */
             position: relative;
             transform-style: preserve-3d;
             transform: rotateX(5deg);
@@ -92,8 +93,8 @@
             background: #e0e0e0;
             border-radius: 15px;
             display: flex;
-            justify-content: center;
-            align-items: center;
+            justify-content: center; /* Centrum w poziomie */
+            align-items: center;     /* Centrum w pionie */
             backface-visibility: hidden;
         }
 
@@ -103,11 +104,9 @@
         }
 
         .soundcard-img {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
             max-width: 40%;
             height: auto;
+            /* Usunięto pozycjonowanie absolutne, aby flex w .page-back wycentrował obraz */
         }
 
         .page1 {
@@ -207,10 +206,10 @@
 
         @media (max-width: 1200px) {
             .book {
-                width: 50vw;
-                height: 65vh;
-                min-width: 500px;
-                min-height: 650px;
+                width: 25vw;    /* połowa z 50vw */
+                height: 32.5vh; /* połowa z 65vh */
+                min-width: 250px;  /* połowa z 500px */
+                min-height: 325px; /* połowa z 650px */
             }
             .btn {
                 font-size: 40px;
@@ -220,17 +219,15 @@
             }
             .soundcard-img {
                 max-width: 45%;
-                bottom: 15px;
-                left: 15px;
             }
         }
 
         @media (max-width: 800px) {
             .book {
-                width: 70vw;
-                height: 70vh;
-                min-width: 400px;
-                min-height: 500px;
+                width: 35vw;    /* połowa z 70vw */
+                height: 35vh;   /* połowa z 70vh */
+                min-width: 200px;  /* połowa z 400px */
+                min-height: 250px; /* połowa z 500px */
             }
             .btn {
                 font-size: 32px;
@@ -241,12 +238,10 @@
             }
             body {
                 justify-content: center;
-                padding-right: 0;
+                /* padding-right: 0; */ /* Już usunięte powyżej */
             }
             .soundcard-img {
                 max-width: 50%;
-                bottom: 10px;
-                left: 10px;
             }
         }
     </style>
@@ -262,13 +257,13 @@
                     <img src="" alt="Logo" class="page1-logo" id="randomLogo">
                 </div>
                 <div class="page-back" id="page1Back">
-                    <img src="SOUNDCARD.png" alt="Soundcard" class="soundcard-img">
+                    <img src="speaker.png" alt="Speaker" class="soundcard-img">
                 </div>
             </div>
 
             <div class="page page3" id="page3">
                 <div class="page-front">
-                    <!-- Dodatkowa treść drugiej strony, jeśli potrzeba -->
+                    <!-- Dodatkowa treść  -->
                 </div>
             </div>
 
