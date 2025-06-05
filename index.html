@@ -29,15 +29,16 @@
             user-select: none;
         }
 
-        /* Duże losowe logo na środku, za książeczką */
+        /* Duże losowe logo w tle, 3× większe, aby wypełniało okno */
         #bigLogoBg {
             position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            max-width: 80vw;
-            max-height: 80vh;
-            z-index: 0; /* za książeczką, nad czarnym tłem */
+            width: 300vw;
+            height: 300vh;
+            object-fit: cover;
+            z-index: 0; /* za książeczką */
         }
 
         /* Animacja bujania książeczki */
@@ -185,7 +186,7 @@
             width: 100%;
             height: 100%;
             pointer-events: none;
-            z-index: 1000;
+            z-index: 2;
         }
 
         /* Przeniesienie i styl napis 'swipe to open' */
@@ -288,6 +289,7 @@
         let particleInterval;
         let permissionGranted = false;
         let hintTimeout;
+
         const audio = new Audio('muza.mp3');
         audio.loop = true;
 
@@ -297,6 +299,35 @@
         const swipeHint = document.getElementById('swipeHint');
         const randomLogo = document.getElementById('randomLogo');
         const bigLogoBg = document.getElementById('bigLogoBg');
+
+        // Offscreen canvas do pobierania pikseli tła
+        const offCanvas = document.createElement('canvas');
+        const offCtx = offCanvas.getContext('2d');
+
+        function resizeCanvas() {
+            offCanvas.width = window.innerWidth;
+            offCanvas.height = window.innerHeight;
+            drawBgToCanvas();
+        }
+
+        function drawBgToCanvas() {
+            if (!bigLogoBg.complete) return;
+            // Rozmiary i pozycja dużego logo na ekranie
+            const imgW = bigLogoBg.clientWidth;
+            const imgH = bigLogoBg.clientHeight;
+            const imgX = (window.innerWidth - imgW) / 2;
+            const imgY = (window.innerHeight - imgH) / 2;
+            offCtx.clearRect(0, 0, offCanvas.width, offCanvas.height);
+            offCtx.drawImage(bigLogoBg, imgX, imgY, imgW, imgH);
+        }
+
+        bigLogoBg.addEventListener('load', () => {
+            resizeCanvas();
+        });
+
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+        });
 
         function setRandomLogo() {
             // Losowe logo na okładkę
@@ -314,13 +345,38 @@
             const noteEmojis = ['♪', '♫', '♩', '♬', '𝄞', '𝄢'];
             particle.textContent = noteEmojis[Math.floor(Math.random() * noteEmojis.length)];
             
-            const x = Math.random() * (window.innerWidth * 0.3);
-            const y = Math.random() * window.innerHeight;
-            
+            // Emituj nutkę z okolic książeczki
+            const bookRect = book.getBoundingClientRect();
+            const offsetX = (Math.random() - 0.5) * 40; // lekki losowy przesyt
+            const offsetY = Math.random() * bookRect.height - 20; 
+            const x = bookRect.left + bookRect.width / 2 + offsetX;
+            const y = bookRect.top + bookRect.height / 2 + offsetY;
+
+            particle.style.position = 'absolute';
             particle.style.left = x + 'px';
             particle.style.top = y + 'px';
-            
+
+            // Jeśli pod pikselem tła jest jasny, nutka czarna; jeśli ciemny, nutka biała
+            let r, g, b;
+            try {
+                const data = offCtx.getImageData(Math.floor(x), Math.floor(y), 1, 1).data;
+                [r, g, b] = data;
+            } catch {
+                r = g = b = 0;
+            }
+            const brightness = (r + g + b) / 3;
+            particle.style.color = brightness > 128 ? '#000' : '#fff';
+
             musicParticles.appendChild(particle);
+            
+            // Animacja wznoszenia i zanikania
+            particle.animate([
+                { transform: `translateY(0)`, opacity: 1 },
+                { transform: `translateY(-50px)`, opacity: 0 }
+            ], {
+                duration: 1000,
+                easing: 'ease-out'
+            });
             
             setTimeout(() => {
                 if (particle.parentNode) {
