@@ -29,16 +29,17 @@
             user-select: none;
         }
 
-        /* Duże losowe logo w tle, wypełniające całe okno i skalowane do 150% */
+        /* Duże losowe logo w tle: obniżone i półprzezroczyste */
         #bigLogoBg {
             position: fixed;
-            top: 50%;
+            top: 60%;                  /* obniżone w dół */
             left: 50%;
             width: 100vw;
             height: 100vh;
             object-fit: cover;
             transform: translate(-50%, -50%) scale(1.5);
             transform-origin: center center;
+            opacity: 0.5;              /* 50% przezroczystości */
             z-index: 0; /* za książeczką */
         }
 
@@ -331,7 +332,7 @@
             const idx = Math.floor(Math.random() * logoFiles.length);
             const chosen = logoFiles[idx];
             randomLogo.src = chosen;
-            // To samo logo, wypełniające całe tło i skalowane do 150%
+            // To samo logo, wypełniające całe tło, półprzezroczyste
             bigLogoBg.src = chosen;
         }
         setRandomLogo();
