@@ -29,14 +29,13 @@
             user-select: none;
         }
 
-        /* Duże losowe logo w tle, 3× większe, aby wypełniało okno */
+        /* Duże losowe logo w tle, wypełniające całe okno */
         #bigLogoBg {
             position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 300vw;
-            height: 300vh;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
             object-fit: cover;
             z-index: 0; /* za książeczką */
         }
@@ -312,13 +311,9 @@
 
         function drawBgToCanvas() {
             if (!bigLogoBg.complete) return;
-            // Rozmiary i pozycja dużego logo na ekranie
-            const imgW = bigLogoBg.clientWidth;
-            const imgH = bigLogoBg.clientHeight;
-            const imgX = (window.innerWidth - imgW) / 2;
-            const imgY = (window.innerHeight - imgH) / 2;
+            // Rysujemy pełnoekranowe logo w offCanvas
             offCtx.clearRect(0, 0, offCanvas.width, offCanvas.height);
-            offCtx.drawImage(bigLogoBg, imgX, imgY, imgW, imgH);
+            offCtx.drawImage(bigLogoBg, 0, 0, offCanvas.width, offCanvas.height);
         }
 
         bigLogoBg.addEventListener('load', () => {
@@ -334,7 +329,7 @@
             const idx = Math.floor(Math.random() * logoFiles.length);
             const chosen = logoFiles[idx];
             randomLogo.src = chosen;
-            // To samo logo, ale większe w tle
+            // To samo logo, wypełniające całe tło
             bigLogoBg.src = chosen;
         }
         setRandomLogo();
