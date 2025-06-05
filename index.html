@@ -32,8 +32,47 @@
             align-items: center;     /* Wyśrodkowanie pionowe */
             overflow: hidden;
             user-select: none;
-            /* padding-right: 5%; */  /* Usunięte, bo książeczka jest wyśrodkowana */
         }
+
+        .title-text {
+            position: absolute;
+            top: 10%;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            z-index: 1001;
+        }
+
+        .magnet-letter {
+            display: inline-block;
+            font-size: 72px;
+            color: #333;
+            margin: 0 4px 0 4px;
+            user-select: none;
+        }
+
+        /* Różne rotacje i odstępy – można dopasować dowolnie */
+        .magnet-letter:nth-child(1)  { transform: rotate(-12deg);  margin-right: 8px; }
+        .magnet-letter:nth-child(2)  { transform: rotate(8deg);    margin-right: 2px; }
+        .magnet-letter:nth-child(3)  { transform: rotate(-5deg);   margin-right: 6px; }
+        .magnet-letter:nth-child(4)  { transform: rotate(10deg);   margin-right: 4px; }
+        .magnet-letter:nth-child(5)  { transform: rotate(-7deg);   margin-right: 10px; }
+        .magnet-letter:nth-child(6)  { transform: rotate(5deg);    margin-right: 2px; }
+        .magnet-letter:nth-child(7)  { transform: rotate(-3deg);   margin-right: 8px; }
+        .magnet-letter:nth-child(8)  { transform: rotate(7deg);    margin-right: 4px; }
+        .magnet-letter:nth-child(9)  { transform: rotate(-9deg);   margin-right: 6px; }
+        .magnet-letter:nth-child(10) { transform: rotate(12deg);   margin-right: 8px; }
+        .magnet-letter:nth-child(11) { transform: rotate(-4deg);   margin-right: 4px; }
+        .magnet-letter:nth-child(12) { transform: rotate(9deg);    margin-right: 2px; }
+        .magnet-letter:nth-child(13) { transform: rotate(-6deg);   margin-right: 10px; }
+        .magnet-letter:nth-child(14) { transform: rotate(4deg);    margin-right: 4px; }
+        .magnet-letter:nth-child(15) { transform: rotate(-8deg);   margin-right: 6px; }
+        .magnet-letter:nth-child(16) { transform: rotate(11deg);   margin-right: 8px; }
+        .magnet-letter:nth-child(17) { transform: rotate(-5deg);   margin-right: 4px; }
+        .magnet-letter:nth-child(18) { transform: rotate(6deg);    margin-right: 0; } /* ostatnia litera bez dodatkowego marginesu */
 
         .book-container {
             perspective: 1500px;
@@ -41,7 +80,6 @@
         }
 
         .book {
-            /* DWUKROTNIE MNIEJSZY ROZMIAR */
             width: 22.5vw;    /* połowa z 45vw */
             height: 30vh;     /* połowa z 60vh */
             min-width: 300px;  /* połowa z 600px */
@@ -93,8 +131,8 @@
             background: #e0e0e0;
             border-radius: 15px;
             display: flex;
-            justify-content: center; /* Centrum w poziomie */
-            align-items: center;     /* Centrum w pionie */
+            justify-content: center; /* Wyśrodkuj obraz w pionie */
+            align-items: center;     /* Wyśrodkuj obraz w poziomie */
             backface-visibility: hidden;
         }
 
@@ -106,7 +144,6 @@
         .soundcard-img {
             max-width: 40%;
             height: auto;
-            /* Usunięto pozycjonowanie absolutne, aby flex w .page-back wycentrował obraz */
         }
 
         .page1 {
@@ -171,20 +208,11 @@
             z-index: 1000;
         }
 
-        .title-text {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            font-family: 'Apple Garamond', serif;
-            font-size: 72px;
-            color: #333;
-            z-index: 1001;
-        }
-
         .swipe-hint {
             position: fixed;
             bottom: 20px;
-            left: 20px;
+            left: 50%;
+            transform: translateX(-50%);
             font-family: 'Apple Garamond', serif;
             font-size: 24px;
             color: #666;
@@ -220,6 +248,9 @@
             .soundcard-img {
                 max-width: 45%;
             }
+            .title-text {
+                top: 8%;
+            }
         }
 
         @media (max-width: 800px) {
@@ -236,18 +267,36 @@
             .particle {
                 font-size: 80px;
             }
-            body {
-                justify-content: center;
-                /* padding-right: 0; */ /* Już usunięte powyżej */
-            }
             .soundcard-img {
                 max-width: 50%;
+            }
+            .title-text {
+                top: 12%;
             }
         }
     </style>
 </head>
 <body>
-    <div class="title-text">Klub Zaproszenie</div>
+    <!-- Tytuł "Klub Zaproszenie" stylizowany jak literki z magnesów na lodówce: -->
+    <div class="title-text">
+        <span class="magnet-letter">K</span>
+        <span class="magnet-letter">l</span>
+        <span class="magnet-letter">u</span>
+        <span class="magnet-letter">b</span>
+        <span class="magnet-letter">&nbsp;</span>
+        <span class="magnet-letter">Z</span>
+        <span class="magnet-letter">a</span>
+        <span class="magnet-letter">p</span>
+        <span class="magnet-letter">r</span>
+        <span class="magnet-letter">o</span>
+        <span class="magnet-letter">s</span>
+        <span class="magnet-letter">z</span>
+        <span class="magnet-letter">e</span>
+        <span class="magnet-letter">n</span>
+        <span class="magnet-letter">i</span>
+        <span class="magnet-letter">e</span>
+    </div>
+    
     <div class="swipe-hint" id="swipeHint">swipe to open</div>
     
     <div class="book-container">
@@ -263,7 +312,7 @@
 
             <div class="page page3" id="page3">
                 <div class="page-front">
-                    <!-- Dodatkowa treść  -->
+                    <!-- Dodatkowa treść drugiej strony, jeśli potrzeba -->
                 </div>
             </div>
 
@@ -280,7 +329,6 @@
     <script>
         // Lista plików tła
         const backgrounds = ['bg1.jpg', 'bg2.jpg', 'bg3.jpg', 'bg4.jpg', 'bg5.jpg'];
-        // Wybierz losowe tło przy każdym odświeżeniu
         const randomBg = backgrounds[Math.floor(Math.random() * backgrounds.length)];
         document.body.style.backgroundImage = `url('${randomBg}')`;
 
