@@ -19,52 +19,39 @@
 
         html, body {
             cursor: url('cursor1.png') 16 16, auto;
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
+            background: #000; /* tło czarne */
+            overflow: hidden;
         }
 
         body {
             font-family: 'Apple Garamond', serif;
             min-height: 100vh;
-            display: flex;
-            justify-content: center; /* Wyśrodkowanie poziome */
-            align-items: center;     /* Wyśrodkowanie pionowe */
-            overflow: hidden;
+            /* usuwamy flexbox, bo książeczka jest pozycjonowana absolutnie */
             user-select: none;
         }
 
-        /* Obraz logo na pełnym ekranie */
+        /* Obraz logo na pełnym ekranie (za wszystkimi elementami) */
         #bgLogo {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            z-index: -1; /* Za wszystkimi elementami */
+            display: none; /* wyłączamy, skoro tło jest czarne */
         }
 
-        .swipe-hint {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-family: 'Apple Garamond', serif;
-            font-size: 24px;
-            color: #666;
-            opacity: 0;
-            transition: opacity 1s ease-in-out;
-            z-index: 1001;
-        }
-
-        .swipe-hint.show {
-            opacity: 1;
+        /* Animacja bujania książeczki */
+        @keyframes sway {
+            0%   { transform: rotate(0deg); }
+            25%  { transform: rotate(2deg); }
+            50%  { transform: rotate(0deg); }
+            75%  { transform: rotate(-2deg); }
+            100% { transform: rotate(0deg); }
         }
 
         .book-container {
+            position: fixed;
+            bottom: 50px;    /* margines od dolnej krawędzi ekranu */
+            right: 50px;     /* margines od prawej krawędzi ekranu */
             perspective: 1500px;
             transform-style: preserve-3d;
+            /* nadanie animacji bujania */
+            animation: sway 6s ease-in-out infinite;
         }
 
         .book {
@@ -196,6 +183,23 @@
             z-index: 1000;
         }
 
+        /* Przeniesienie i styl napis 'swipe to open' */
+        .swipe-hint {
+            position: absolute;
+            bottom: 20px;   /* 20px powyżej dolnej krawędzi książeczki */
+            right: 20px;    /* 20px od prawej krawędzi książeczki */
+            font-family: 'Apple Garamond', serif;
+            font-size: 24px;
+            color: #666;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+            z-index: 1001;
+        }
+
+        .swipe-hint.show {
+            opacity: 1;
+        }
+
         @media (max-width: 1200px) {
             .book {
                 width: 25vw;    /* połowa z 50vw */
@@ -235,12 +239,10 @@
     </style>
 </head>
 <body>
-    <!-- Logo na pełnym ekranie (za wszystkimi elementami) -->
-    <img id="bgLogo" src="" alt="Tło - Logo">
-
-    <div class="swipe-hint" id="swipeHint">swipe to open</div>
-    
     <div class="book-container">
+        <!-- Napis 'swipe to open' przeniesiony do wnętrza książeczki -->
+        <div class="swipe-hint" id="swipeHint">swipe to open</div>
+
         <div class="book" id="book">
             <div class="page page1" id="page1">
                 <div class="page-front">
@@ -268,12 +270,7 @@
     <div class="music-particles" id="musicParticles"></div>
 
     <script>
-        // Lista plików tła
-        const backgrounds = ['bg1.jpg', 'bg2.jpg', 'bg3.jpg', 'bg4.jpg', 'bg5.jpg'];
-        const randomBg = backgrounds[Math.floor(Math.random() * backgrounds.length)];
-        // Ustaw losowe tło (PNG) w body
-        document.body.style.backgroundImage = `url('${randomBg}')`;
-
+        // Lista plików tła – usunięta, bo tło jest czarne
         // Lista plików z logo na okładce
         const logoFiles = ['KZ1.png', 'KZ2.png', 'KZ3.png', 'KZ4.png', 'KZ5.png', 'KZ6.png'];
 
@@ -292,15 +289,12 @@
         const book = document.getElementById('book');
         const swipeHint = document.getElementById('swipeHint');
         const randomLogo = document.getElementById('randomLogo');
-        const bgLogo = document.getElementById('bgLogo');
 
         function setRandomLogo() {
             // Wybierz losowe logo na okładkę
             const randomIndex = Math.floor(Math.random() * logoFiles.length);
             const chosenLogo = logoFiles[randomIndex];
             randomLogo.src = chosenLogo;
-            // Ustaw to samo logo jako tło w pełnym oknie
-            bgLogo.src = chosenLogo;
         }
         setRandomLogo();
 
