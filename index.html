@@ -19,20 +19,25 @@
 
         html, body {
             cursor: url('cursor1.png') 16 16, auto;
-            background: #000; /* tło czarne */
+            background: #000; /* czarne tło */
             overflow: hidden;
         }
 
         body {
             font-family: 'Apple Garamond', serif;
             min-height: 100vh;
-            /* usuwamy flexbox, bo książeczka jest pozycjonowana absolutnie */
             user-select: none;
         }
 
-        /* Obraz logo na pełnym ekranie (za wszystkimi elementami) */
-        #bgLogo {
-            display: none; /* wyłączamy, skoro tło jest czarne */
+        /* Duże losowe logo na środku, za książeczką */
+        #bigLogoBg {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 80vw;
+            max-height: 80vh;
+            z-index: 0; /* za książeczką, nad czarnym tłem */
         }
 
         /* Animacja bujania książeczki */
@@ -50,8 +55,8 @@
             right: 50px;     /* margines od prawej krawędzi ekranu */
             perspective: 1500px;
             transform-style: preserve-3d;
-            /* nadanie animacji bujania */
             animation: sway 6s ease-in-out infinite;
+            z-index: 1; /* nad dużym logo */
         }
 
         .book {
@@ -239,8 +244,11 @@
     </style>
 </head>
 <body>
+    <!-- Duże, losowe logo w tle -->
+    <img id="bigLogoBg" src="" alt="Duże Logo">
+
     <div class="book-container">
-        <!-- Napis 'swipe to open' przeniesiony do wnętrza książeczki -->
+        <!-- Napis 'swipe to open' wewnątrz książeczki, w prawym dolnym rogu okładki -->
         <div class="swipe-hint" id="swipeHint">swipe to open</div>
 
         <div class="book" id="book">
@@ -270,8 +278,7 @@
     <div class="music-particles" id="musicParticles"></div>
 
     <script>
-        // Lista plików tła – usunięta, bo tło jest czarne
-        // Lista plików z logo na okładce
+        // Lista plików z logo (te same, co na książeczce)
         const logoFiles = ['KZ1.png', 'KZ2.png', 'KZ3.png', 'KZ4.png', 'KZ5.png', 'KZ6.png'];
 
         let isDragging = false;
@@ -289,12 +296,15 @@
         const book = document.getElementById('book');
         const swipeHint = document.getElementById('swipeHint');
         const randomLogo = document.getElementById('randomLogo');
+        const bigLogoBg = document.getElementById('bigLogoBg');
 
         function setRandomLogo() {
-            // Wybierz losowe logo na okładkę
-            const randomIndex = Math.floor(Math.random() * logoFiles.length);
-            const chosenLogo = logoFiles[randomIndex];
-            randomLogo.src = chosenLogo;
+            // Losowe logo na okładkę
+            const idx = Math.floor(Math.random() * logoFiles.length);
+            const chosen = logoFiles[idx];
+            randomLogo.src = chosen;
+            // To samo logo, ale większe w tle
+            bigLogoBg.src = chosen;
         }
         setRandomLogo();
 
