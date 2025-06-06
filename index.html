@@ -191,6 +191,14 @@
             z-index: 2;
         }
 
+        .particle {
+            position: absolute;
+            font-size: 48px;
+            font-weight: bold;
+            pointer-events: none;
+            will-change: transform;
+        }
+
         /* Przeniesienie i styl napis 'swipe to open' */
         .swipe-hint {
             position: absolute;
@@ -219,7 +227,7 @@
                 font-size: 40px;
             }
             .particle {
-                font-size: 100px;
+                font-size: 40px;
             }
             .soundcard-img {
                 max-width: 45%;
@@ -238,7 +246,7 @@
                 gap: 30px;
             }
             .particle {
-                font-size: 80px;
+                font-size: 36px;
             }
             .soundcard-img {
                 max-width: 50%;
@@ -260,7 +268,7 @@
                     <img src="" alt="Logo" class="page1-logo" id="randomLogo">
                 </div>
                 <div class="page-back" id="page1Back">
-                    <img src="speaker.png" alt="Speaker" class="soundcard-img">
+                    <img src="speaker.png" alt="Speaker" class="soundcard-img" id="speakerImg">
                 </div>
             </div>
 
@@ -289,6 +297,7 @@
         let currentRotation = 0;
         let isFlipped = false;
         let particleInterval;
+        let extraParticleInterval; // Dodana zmienna dla dodatkowego interwału
         let permissionGranted = false;
         let hintTimeout;
 
@@ -301,6 +310,7 @@
         const swipeHint = document.getElementById('swipeHint');
         const randomLogo = document.getElementById('randomLogo');
         const bigLogoBg = document.getElementById('bigLogoBg');
+        const speakerImg = document.getElementById('speakerImg');
 
         // Offscreen canvas do pobierania pikseli tła
         const offCanvas = document.createElement('canvas');
@@ -337,27 +347,39 @@
         }
         setRandomLogo();
 
+        function getSpeakerPosition() {
+            // Pobierz pozycję głośnika względem okna przeglądarki
+            const speakerRect = speakerImg.getBoundingClientRect();
+            return {
+                x: speakerRect.left + speakerRect.width / 2,
+                y: speakerRect.top + speakerRect.height / 2
+            };
+        }
+
         function createMusicParticle() {
+            // Sprawdź czy książeczka jest nadal otwarta
+            if (!isFlipped) return;
+            
             const particle = document.createElement('div');
             particle.classList.add('particle');
             const noteEmojis = ['♪', '♫', '♩', '♬', '𝄞', '𝄢'];
             particle.textContent = noteEmojis[Math.floor(Math.random() * noteEmojis.length)];
             
-            // Emituj nutkę z okolic książeczki
-            const bookRect = book.getBoundingClientRect();
-            const offsetX = (Math.random() - 0.5) * 40; // lekki losowy przesyt
-            const offsetY = Math.random() * bookRect.height - 20; 
-            const x = bookRect.left + bookRect.width / 2 + offsetX;
-            const y = bookRect.top + bookRect.height / 2 + offsetY;
+            // Rozpocznij od pozycji głośnika z lekkim losowym przesunięciem
+            const speakerPos = getSpeakerPosition();
+            const offsetX = (Math.random() - 0.5) * 20;
+            const offsetY = (Math.random() - 0.5) * 20;
+            const startX = speakerPos.x + offsetX;
+            const startY = speakerPos.y + offsetY;
 
             particle.style.position = 'absolute';
-            particle.style.left = x + 'px';
-            particle.style.top = y + 'px';
+            particle.style.left = startX + 'px';
+            particle.style.top = startY + 'px';
 
-            // Jeśli pod pikselem tła jest jasny, nutka czarna; jeśli ciemny, nutka biała
+            // Sprawdź kolor tła pod pozycją nutki
             let r, g, b;
             try {
-                const data = offCtx.getImageData(Math.floor(x), Math.floor(y), 1, 1).data;
+                const data = offCtx.getImageData(Math.floor(startX), Math.floor(startY), 1, 1).data;
                 [r, g, b] = data;
             } catch {
                 r = g = b = 0;
@@ -367,12 +389,64 @@
 
             musicParticles.appendChild(particle);
             
-            // Animacja wznoszenia i zanikania
-            particle.animate([
-                { transform: `translateY(0)`, opacity: 1 },
-                { transform: `translateY(-50px)`, opacity: 0 }
+            // Cel: lewy górny róg ekranu
+            const targetX = Math.random() * 100; // lekka losowość w lewym górnym rogu
+            const targetY = Math.random() * 100;
+            
+            // Oblicz dystans i kierunek
+            const deltaX = targetX - startX;
+            const deltaY = targetY - startY;
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            
+            // Parametry spirali
+            const spiralIntensity = 1.5; // intensywność wirowania
+            const spiralRadius = Math.min(100, distance * 0.3); // promień spirali
+            const rotations = 2 + Math.random() * 2; // 2-4 pełne obroty
+            
+            // Czas animacji zależny od dystansu (szybkie nutki)
+            const duration = Math.max(800, Math.min(2000, distance * 1.5));
+            
+            // Animacja spiralna
+            const animation = particle.animate([
+                { 
+                    transform: `translate(0px, 0px) rotate(0deg)`,
+                    opacity: 1
+                },
+                { 
+                    transform: `translate(${deltaX}px, ${deltaY}px) rotate(${rotations * 360}deg)`,
+                    opacity: 1
+                }
             ], {
-                duration: 1000,
+                duration: duration,
+                easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+            });
+
+            // Dodaj efekt spiralny poprzez keyframes
+            const keyframes = [];
+            const steps = 20;
+            
+            for (let i = 0; i <= steps; i++) {
+                const progress = i / steps;
+                const angle = rotations * 2 * Math.PI * progress;
+                const radius = spiralRadius * (1 - progress * 0.7); // zmniejszający się promień
+                
+                // Pozycja na spirali
+                const spiralX = Math.cos(angle) * radius;
+                const spiralY = Math.sin(angle) * radius;
+                
+                // Pozycja główna (ruch w kierunku celu)
+                const mainX = deltaX * progress;
+                const mainY = deltaY * progress;
+                
+                keyframes.push({
+                    transform: `translate(${mainX + spiralX}px, ${mainY + spiralY}px) rotate(${angle * 180 / Math.PI}deg)`,
+                    opacity: 1,
+                    offset: progress
+                });
+            }
+            
+            particle.animate(keyframes, {
+                duration: duration,
                 easing: 'ease-out'
             });
             
@@ -380,20 +454,46 @@
                 if (particle.parentNode) {
                     musicParticles.removeChild(particle);
                 }
-            }, 1000);
+            }, duration);
         }
 
         function startMusicParticles() {
+            // Zatrzymaj istniejące interwały przed uruchomieniem nowych
+            stopMusicParticles();
+            
+            // Zwiększ częstotliwość tworzenia nutek (więcej nutek)
             particleInterval = setInterval(() => {
                 createMusicParticle();
-            }, 300);
+            }, 150); // co 150ms zamiast 300ms
+            
+            // Dodaj dodatkowy interval dla jeszcze większej ilości nutek
+            extraParticleInterval = setInterval(() => {
+                if (Math.random() > 0.5) { // 50% szansy na dodatkową nutkę
+                    createMusicParticle();
+                }
+            }, 100);
         }
 
         function stopMusicParticles() {
+            // Zatrzymaj główny interwał
             if (particleInterval) {
                 clearInterval(particleInterval);
                 particleInterval = null;
             }
+            
+            // Zatrzymaj dodatkowy interwał
+            if (extraParticleInterval) {
+                clearInterval(extraParticleInterval);
+                extraParticleInterval = null;
+            }
+            
+            // Usuń wszystkie istniejące nutki
+            const existingParticles = musicParticles.querySelectorAll('.particle');
+            existingParticles.forEach(particle => {
+                if (particle.parentNode) {
+                    musicParticles.removeChild(particle);
+                }
+            });
         }
 
         // Odblokowanie odtwarzania muzyki przy pierwszym kliknięciu w książkę
