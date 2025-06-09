@@ -193,10 +193,11 @@
 
         .particle {
             position: absolute;
-            font-size: 48px;
+            font-size: 64px; /* Zwiększone z 48px do 64px */
             font-weight: bold;
             pointer-events: none;
             will-change: transform;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
 
         /* Przeniesienie i styl napis 'swipe to open' */
@@ -227,7 +228,7 @@
                 font-size: 40px;
             }
             .particle {
-                font-size: 40px;
+                font-size: 56px; /* Zwiększone proporcjonalnie */
             }
             .soundcard-img {
                 max-width: 45%;
@@ -246,7 +247,7 @@
                 gap: 30px;
             }
             .particle {
-                font-size: 36px;
+                font-size: 48px; /* Zwiększone proporcjonalnie */
             }
             .soundcard-img {
                 max-width: 50%;
@@ -301,8 +302,18 @@
         let permissionGranted = false;
         let hintTimeout;
 
+        // Zmienne do śledzenia ruchu kursora
+        let mouseX = 0;
+        let mouseY = 0;
+        let lastMouseX = 0;
+        let lastMouseY = 0;
+        let mouseSpeed = 0;
+        let speedHistory = [];
+        let lastMouseUpdate = Date.now();
+
         const audio = new Audio('muza.mp3');
         audio.loop = true;
+        audio.preservesPitch = false; // Pozwala na zmianę tempa bez zmiany wysokości
 
         const page1 = document.getElementById('page1');
         const musicParticles = document.getElementById('musicParticles');
@@ -315,6 +326,43 @@
         // Offscreen canvas do pobierania pikseli tła
         const offCanvas = document.createElement('canvas');
         const offCtx = offCanvas.getContext('2d');
+
+        // Śledzenie ruchu myszy
+        document.addEventListener('mousemove', (e) => {
+            lastMouseX = mouseX;
+            lastMouseY = mouseY;
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            
+            const now = Date.now();
+            const timeDelta = now - lastMouseUpdate;
+            
+            if (timeDelta > 16) { // ~60fps
+                const distance = Math.sqrt(
+                    Math.pow(mouseX - lastMouseX, 2) + 
+                    Math.pow(mouseY - lastMouseY, 2)
+                );
+                const currentSpeed = distance / timeDelta * 16; // normalizowane do 60fps
+                
+                // Historia prędkości dla wygładzenia
+                speedHistory.push(currentSpeed);
+                if (speedHistory.length > 10) {
+                    speedHistory.shift();
+                }
+                
+                // Średnia prędkość
+                mouseSpeed = speedHistory.reduce((a, b) => a + b, 0) / speedHistory.length;
+                
+                // Wpływ na tempo muzyki
+                if (isFlipped && permissionGranted && !audio.paused) {
+                    const basePlaybackRate = 1.0;
+                    const speedMultiplier = Math.max(0.5, Math.min(2.0, 1.0 + (mouseSpeed - 5) * 0.1));
+                    audio.playbackRate = basePlaybackRate * speedMultiplier;
+                }
+                
+                lastMouseUpdate = now;
+            }
+        });
 
         function resizeCanvas() {
             offCanvas.width = window.innerWidth;
@@ -389,65 +437,59 @@
 
             musicParticles.appendChild(particle);
             
-            // Cel: lewy górny róg ekranu
-            const targetX = Math.random() * 100; // lekka losowość w lewym górnym rogu
-            const targetY = Math.random() * 100;
+            // Cel: pozycja kursora z lekką losowością
+            const targetX = mouseX + (Math.random() - 0.5) * 100;
+            const targetY = mouseY + (Math.random() - 0.5) * 100;
             
             // Oblicz dystans i kierunek
             const deltaX = targetX - startX;
             const deltaY = targetY - startY;
             const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
             
-            // Parametry spirali
-            const spiralIntensity = 1.5; // intensywność wirowania
-            const spiralRadius = Math.min(100, distance * 0.3); // promień spirali
-            const rotations = 2 + Math.random() * 2; // 2-4 pełne obroty
+            // Parametry spirali - wpływ prędkości kursora
+            const speedInfluence = Math.min(mouseSpeed / 10, 2);
+            const spiralIntensity = 1.5 + speedInfluence; // intensywność wirowania zależna od prędkości
+            const spiralRadius = Math.min(100, distance * 0.3 + speedInfluence * 20); // promień spirali
+            const rotations = 2 + Math.random() * 2 + speedInfluence; // więcej obrotów przy szybkim ruchu
             
-            // Czas animacji zależny od dystansu (szybkie nutki)
-            const duration = Math.max(800, Math.min(2000, distance * 1.5));
+            // Czas animacji zależny od dystansu i prędkości kursora
+            const baseSpeed = Math.max(800, Math.min(2000, distance * 1.5));
+            const duration = baseSpeed / (1 + speedInfluence * 0.5); // szybsze przy szybkim ruchu kursora
             
-            // Animacja spiralna
-            const animation = particle.animate([
-                { 
-                    transform: `translate(0px, 0px) rotate(0deg)`,
-                    opacity: 1
-                },
-                { 
-                    transform: `translate(${deltaX}px, ${deltaY}px) rotate(${rotations * 360}deg)`,
-                    opacity: 1
-                }
-            ], {
-                duration: duration,
-                easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
-            });
-
             // Dodaj efekt spiralny poprzez keyframes
             const keyframes = [];
-            const steps = 20;
+            const steps = 30; // więcej kroków dla płynniejszej spirali
             
             for (let i = 0; i <= steps; i++) {
                 const progress = i / steps;
                 const angle = rotations * 2 * Math.PI * progress;
                 const radius = spiralRadius * (1 - progress * 0.7); // zmniejszający się promień
                 
-                // Pozycja na spirali
-                const spiralX = Math.cos(angle) * radius;
-                const spiralY = Math.sin(angle) * radius;
+                // Pozycja na spirali - wpływ prędkości kursora na chaotyczność
+                const chaosMultiplier = 1 + mouseSpeed / 20;
+                const spiralX = Math.cos(angle) * radius * chaosMultiplier;
+                const spiralY = Math.sin(angle) * radius * chaosMultiplier;
                 
-                // Pozycja główna (ruch w kierunku celu)
+                // Pozycja główna (ruch w kierunku celu - kursora)
                 const mainX = deltaX * progress;
                 const mainY = deltaY * progress;
                 
+                // Dodaj lekki chaos przy szybkim ruchu kursora
+                const chaosFactor = mouseSpeed > 10 ? (Math.random() - 0.5) * mouseSpeed : 0;
+                
                 keyframes.push({
-                    transform: `translate(${mainX + spiralX}px, ${mainY + spiralY}px) rotate(${angle * 180 / Math.PI}deg)`,
+                    transform: `translate(${mainX + spiralX + chaosFactor}px, ${mainY + spiralY + chaosFactor}px) rotate(${angle * 180 / Math.PI}deg) scale(${1 + speedInfluence * 0.2})`,
                     opacity: 1,
                     offset: progress
                 });
             }
             
+            // Dodaj fade out na końcu
+            keyframes[keyframes.length - 1].opacity = 0;
+            
             particle.animate(keyframes, {
                 duration: duration,
-                easing: 'ease-out'
+                easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
             });
             
             setTimeout(() => {
@@ -464,14 +506,14 @@
             // Zwiększ częstotliwość tworzenia nutek (więcej nutek)
             particleInterval = setInterval(() => {
                 createMusicParticle();
-            }, 150); // co 150ms zamiast 300ms
+            }, 120); // co 120ms dla większej ilości nutek
             
             // Dodaj dodatkowy interval dla jeszcze większej ilości nutek
             extraParticleInterval = setInterval(() => {
-                if (Math.random() > 0.5) { // 50% szansy na dodatkową nutkę
+                if (Math.random() > 0.3) { // 70% szansy na dodatkową nutkę
                     createMusicParticle();
                 }
-            }, 100);
+            }, 80);
         }
 
         function stopMusicParticles() {
@@ -640,6 +682,7 @@
             
             if (permissionGranted) {
                 audio.currentTime = 0;
+                audio.playbackRate = 1.0; // Reset playback rate
                 audio.play();
             }
             startMusicParticles();
@@ -655,6 +698,7 @@
             resetHintTimer();
             
             audio.pause();
+            audio.playbackRate = 1.0; // Reset playback rate
             stopMusicParticles();
         }
 
