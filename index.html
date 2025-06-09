@@ -19,31 +19,147 @@
 
         html, body {
             cursor: url('cursor1.png') 16 16, auto;
-            background: #000; /* czarne tło */
+            background: #000;
             overflow: hidden;
-        }
-
-        body {
             font-family: 'Apple Garamond', serif;
             min-height: 100vh;
             user-select: none;
         }
 
-        /* Duże losowe logo w tle: obniżone i półprzezroczyste */
+        /* BANNER STYLES */
+        #banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 5vw;
+            transition: opacity 0.5s ease;
+        }
+
+        #banner.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* ARM TRACKING CURSOR */
+        #arm {
+            position: absolute;
+            width: 200px;
+            height: auto;
+            pointer-events: none;
+            transform-origin: center center;
+            transition: transform 0.1s ease-out;
+            z-index: 10001;
+        }
+
+        /* LEFT SIDE - ALLOW SOUND */
+        .banner-left {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        #allowsound {
+            width: 300px;
+            height: auto;
+        }
+
+        .yes-no-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            gap: 20px;
+        }
+
+        .yes-btn, .no-btn {
+            font-family: 'Apple Garamond', serif;
+            font-size: 32px;
+            color: #000;
+            background: none;
+            border: none;
+            cursor: url('cursorhover.png') 16 16, pointer;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .yes-btn:hover, .no-btn:hover {
+            transform: scale(1.1);
+            text-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+
+        /* RIGHT SIDE - TEXT */
+        .banner-right {
+            color: #fff;
+            text-align: center;
+            font-size: 48px;
+            line-height: 1.4;
+            font-style: italic;
+        }
+
+        .klub-text {
+            font-size: 64px;
+            font-weight: bold;
+            margin-top: 20px;
+            letter-spacing: 2px;
+        }
+
+        /* CIRCLE TRANSITION */
+        .circle-transition {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: radial-gradient(circle, transparent 0%, transparent 49%, #000 50%);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+            pointer-events: none;
+            transition: all 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .circle-transition.expanding {
+            width: 300vw;
+            height: 300vw;
+            background: radial-gradient(circle, transparent 0%, transparent 49%, transparent 50%);
+        }
+
+        /* MAIN CONTENT - Initially hidden */
+        #mainContent {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+
+        #mainContent.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* MAIN CONTENT STYLES (from original) */
         #bigLogoBg {
             position: fixed;
-            top: 60%;                  /* obniżone w dół */
+            top: 60%;
             left: 50%;
             width: 100vw;
             height: 100vh;
             object-fit: cover;
             transform: translate(-50%, -50%) scale(1.5);
             transform-origin: center center;
-            opacity: 0.5;              /* 50% przezroczystości */
-            z-index: 0; /* za książeczką */
+            opacity: 0.5;
+            z-index: 0;
         }
 
-        /* Animacja bujania książeczki */
         @keyframes sway {
             0%   { transform: rotate(0deg); }
             25%  { transform: rotate(2deg); }
@@ -54,19 +170,19 @@
 
         .book-container {
             position: fixed;
-            bottom: 50px;    /* margines od dolnej krawędzi ekranu */
-            right: 50px;     /* margines od prawej krawędzi ekranu */
+            bottom: 50px;
+            right: 50px;
             perspective: 1500px;
             transform-style: preserve-3d;
             animation: sway 6s ease-in-out infinite;
-            z-index: 1; /* nad dużym logo */
+            z-index: 1;
         }
 
         .book {
-            width: 22.5vw;    /* połowa z 45vw */
-            height: 30vh;     /* połowa z 60vh */
-            min-width: 300px;  /* połowa z 600px */
-            min-height: 375px; /* połowa z 750px */
+            width: 22.5vw;
+            height: 30vh;
+            min-width: 300px;
+            min-height: 375px;
             position: relative;
             transform-style: preserve-3d;
             transform: rotateX(5deg);
@@ -114,8 +230,8 @@
             background: #e0e0e0;
             border-radius: 15px;
             display: flex;
-            justify-content: center; /* Wyśrodkuj obraz w pionie */
-            align-items: center;     /* Wyśrodkuj obraz w poziomie */
+            justify-content: center;
+            align-items: center;
             backface-visibility: hidden;
         }
 
@@ -193,18 +309,17 @@
 
         .particle {
             position: absolute;
-            font-size: 64px; /* Zwiększone z 48px do 64px */
+            font-size: 64px;
             font-weight: bold;
             pointer-events: none;
             will-change: transform;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
 
-        /* Przeniesienie i styl napis 'swipe to open' */
         .swipe-hint {
             position: absolute;
-            bottom: 20px;   /* 20px powyżej dolnej krawędzi książeczki */
-            right: 20px;    /* 20px od prawej krawędzi książeczki */
+            bottom: 20px;
+            right: 20px;
             font-family: 'Apple Garamond', serif;
             font-size: 24px;
             color: #666;
@@ -217,511 +332,564 @@
             opacity: 1;
         }
 
+        /* RESPONSIVE */
         @media (max-width: 1200px) {
-            .book {
-                width: 25vw;    /* połowa z 50vw */
-                height: 32.5vh; /* połowa z 65vh */
-                min-width: 250px;  /* połowa z 500px */
-                min-height: 325px; /* połowa z 650px */
+            .banner-right {
+                font-size: 36px;
             }
-            .btn {
-                font-size: 40px;
+            .klub-text {
+                font-size: 48px;
             }
-            .particle {
-                font-size: 56px; /* Zwiększone proporcjonalnie */
+            #allowsound {
+                width: 250px;
             }
-            .soundcard-img {
-                max-width: 45%;
+            .yes-btn, .no-btn {
+                font-size: 28px;
+            }
+            #arm {
+                width: 150px;
             }
         }
 
         @media (max-width: 800px) {
-            .book {
-                width: 35vw;    /* połowa z 70vw */
-                height: 35vh;   /* połowa z 70vh */
-                min-width: 200px;  /* połowa z 400px */
-                min-height: 250px; /* połowa z 500px */
+            #banner {
+                flex-direction: column;
+                padding: 5vh 5vw;
+                gap: 40px;
             }
-            .btn {
-                font-size: 32px;
-                gap: 30px;
+            .banner-right {
+                font-size: 28px;
             }
-            .particle {
-                font-size: 48px; /* Zwiększone proporcjonalnie */
+            .klub-text {
+                font-size: 36px;
             }
-            .soundcard-img {
-                max-width: 50%;
+            #allowsound {
+                width: 200px;
+            }
+            .yes-btn, .no-btn {
+                font-size: 24px;
+            }
+            #arm {
+                width: 120px;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Duże, losowe logo w tle -->
-    <img id="bigLogoBg" src="" alt="Duże Logo">
-
-    <div class="book-container">
-        <!-- Napis 'swipe to open' wewnątrz książeczki, w prawym dolnym rogu okładki -->
-        <div class="swipe-hint" id="swipeHint">swipe to open</div>
-
-        <div class="book" id="book">
-            <div class="page page1" id="page1">
-                <div class="page-front">
-                    <img src="" alt="Logo" class="page1-logo" id="randomLogo">
-                </div>
-                <div class="page-back" id="page1Back">
-                    <img src="speaker.png" alt="Speaker" class="soundcard-img" id="speakerImg">
-                </div>
+    <!-- BANNER -->
+    <div id="banner">
+        <!-- ARM FOLLOWING CURSOR -->
+        <img id="arm" src="arm.png" alt="Arm">
+        
+        <!-- LEFT SIDE -->
+        <div class="banner-left">
+            <img id="allowsound" src="allowsound.png" alt="Allow Sound">
+            <div class="yes-no-container">
+                <button class="yes-btn" onclick="acceptSound()">Yes</button>
+                <button class="no-btn" onclick="declineSound()">No</button>
             </div>
+        </div>
 
-            <div class="page page3" id="page3">
-                <div class="page-front">
-                    <!-- Dodatkowa treść drugiej strony, jeśli potrzeba -->
-                </div>
-            </div>
-
-            <div class="buttons-container" id="buttonsContainer">
-                <button class="btn" onclick="handleButtonClick('archive')">Archive</button>
-                <button class="btn" onclick="handleButtonClick('info')">Info</button>
-                <button class="btn" onclick="handleButtonClick('about')">About</button>
-            </div>
+        <!-- RIGHT SIDE -->
+        <div class="banner-right">
+            Sign the sound pledge<br>
+            to join:<br>
+            <div class="klub-text">KLUB ZAPROSZENIE</div>
         </div>
     </div>
 
-    <div class="music-particles" id="musicParticles"></div>
+    <!-- CIRCLE TRANSITION -->
+    <div class="circle-transition" id="circleTransition"></div>
+
+    <!-- MAIN CONTENT -->
+    <div id="mainContent">
+        <img id="bigLogoBg" src="" alt="Duże Logo">
+
+        <div class="book-container">
+            <div class="swipe-hint" id="swipeHint">swipe to open</div>
+
+            <div class="book" id="book">
+                <div class="page page1" id="page1">
+                    <div class="page-front">
+                        <img src="" alt="Logo" class="page1-logo" id="randomLogo">
+                    </div>
+                    <div class="page-back" id="page1Back">
+                        <img src="speaker.png" alt="Speaker" class="soundcard-img" id="speakerImg">
+                    </div>
+                </div>
+
+                <div class="page page3" id="page3">
+                    <div class="page-front">
+                    </div>
+                </div>
+
+                <div class="buttons-container" id="buttonsContainer">
+                    <button class="btn" onclick="handleButtonClick('archive')">Archive</button>
+                    <button class="btn" onclick="handleButtonClick('info')">Info</button>
+                    <button class="btn" onclick="handleButtonClick('about')">About</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="music-particles" id="musicParticles"></div>
+    </div>
 
     <script>
-        // Lista plików z logo (te same, co na książeczce)
-        const logoFiles = ['KZ1.png', 'KZ2.png', 'KZ3.png', 'KZ4.png', 'KZ5.png', 'KZ6.png'];
+        // BANNER VARIABLES
+        const banner = document.getElementById('banner');
+        const arm = document.getElementById('arm');
+        const circleTransition = document.getElementById('circleTransition');
+        const mainContent = document.getElementById('mainContent');
 
-        let isDragging = false;
-        let startX = 0;
-        let currentRotation = 0;
-        let isFlipped = false;
-        let particleInterval;
-        let extraParticleInterval; // Dodana zmienna dla dodatkowego interwału
-        let permissionGranted = false;
-        let hintTimeout;
-
-        // Zmienne do śledzenia ruchu kursora
+        // ARM TRACKING
         let mouseX = 0;
         let mouseY = 0;
-        let lastMouseX = 0;
-        let lastMouseY = 0;
-        let mouseSpeed = 0;
-        let speedHistory = [];
-        let lastMouseUpdate = Date.now();
+        let armImg = new Image();
+        
+        armImg.onload = function() {
+            // Calculate anchor point (center of white pixels)
+            // For now, we'll assume the anchor is at the center of the image
+            // You can adjust this if needed
+        };
+        armImg.src = 'arm.png';
 
-        const audio = new Audio('muza.mp3');
-        audio.loop = true;
-        audio.preservesPitch = false; // Pozwala na zmianę tempa bez zmiany wysokości
-
-        const page1 = document.getElementById('page1');
-        const musicParticles = document.getElementById('musicParticles');
-        const book = document.getElementById('book');
-        const swipeHint = document.getElementById('swipeHint');
-        const randomLogo = document.getElementById('randomLogo');
-        const bigLogoBg = document.getElementById('bigLogoBg');
-        const speakerImg = document.getElementById('speakerImg');
-
-        // Offscreen canvas do pobierania pikseli tła
-        const offCanvas = document.createElement('canvas');
-        const offCtx = offCanvas.getContext('2d');
-
-        // Śledzenie ruchu myszy
         document.addEventListener('mousemove', (e) => {
-            lastMouseX = mouseX;
-            lastMouseY = mouseY;
             mouseX = e.clientX;
             mouseY = e.clientY;
             
-            const now = Date.now();
-            const timeDelta = now - lastMouseUpdate;
-            
-            if (timeDelta > 16) { // ~60fps
-                const distance = Math.sqrt(
-                    Math.pow(mouseX - lastMouseX, 2) + 
-                    Math.pow(mouseY - lastMouseY, 2)
-                );
-                const currentSpeed = distance / timeDelta * 16; // normalizowane do 60fps
-                
-                // Historia prędkości dla wygładzenia
-                speedHistory.push(currentSpeed);
-                if (speedHistory.length > 10) {
-                    speedHistory.shift();
-                }
-                
-                // Średnia prędkość
-                mouseSpeed = speedHistory.reduce((a, b) => a + b, 0) / speedHistory.length;
-                
-                // Wpływ na tempo muzyki
-                if (isFlipped && permissionGranted && !audio.paused) {
-                    const basePlaybackRate = 1.0;
-                    const speedMultiplier = Math.max(0.5, Math.min(2.0, 1.0 + (mouseSpeed - 5) * 0.1));
-                    audio.playbackRate = basePlaybackRate * speedMultiplier;
-                }
-                
-                lastMouseUpdate = now;
+            if (!banner.classList.contains('hidden')) {
+                // Position arm so its center follows the cursor
+                arm.style.left = (mouseX - arm.offsetWidth / 2) + 'px';
+                arm.style.top = (mouseY - arm.offsetHeight / 2) + 'px';
             }
         });
 
-        function resizeCanvas() {
-            offCanvas.width = window.innerWidth;
-            offCanvas.height = window.innerHeight;
-            drawBgToCanvas();
-        }
-
-        function drawBgToCanvas() {
-            if (!bigLogoBg.complete) return;
-            // Rysujemy pełnoekranowe logo w offCanvas
-            offCtx.clearRect(0, 0, offCanvas.width, offCanvas.height);
-            offCtx.drawImage(bigLogoBg, 0, 0, offCanvas.width, offCanvas.height);
-        }
-
-        bigLogoBg.addEventListener('load', () => {
-            resizeCanvas();
-        });
-
-        window.addEventListener('resize', () => {
-            resizeCanvas();
-        });
-
-        function setRandomLogo() {
-            // Losowe logo na okładkę
-            const idx = Math.floor(Math.random() * logoFiles.length);
-            const chosen = logoFiles[idx];
-            randomLogo.src = chosen;
-            // To samo logo, wypełniające całe tło, półprzezroczyste
-            bigLogoBg.src = chosen;
-        }
-        setRandomLogo();
-
-        function getSpeakerPosition() {
-            // Pobierz pozycję głośnika względem okna przeglądarki
-            const speakerRect = speakerImg.getBoundingClientRect();
-            return {
-                x: speakerRect.left + speakerRect.width / 2,
-                y: speakerRect.top + speakerRect.height / 2
-            };
-        }
-
-        function createMusicParticle() {
-            // Sprawdź czy książeczka jest nadal otwarta
-            if (!isFlipped) return;
-            
-            const particle = document.createElement('div');
-            particle.classList.add('particle');
-            const noteEmojis = ['♪', '♫', '♩', '♬', '𝄞', '𝄢'];
-            particle.textContent = noteEmojis[Math.floor(Math.random() * noteEmojis.length)];
-            
-            // Rozpocznij od pozycji głośnika z lekkim losowym przesunięciem
-            const speakerPos = getSpeakerPosition();
-            const offsetX = (Math.random() - 0.5) * 20;
-            const offsetY = (Math.random() - 0.5) * 20;
-            const startX = speakerPos.x + offsetX;
-            const startY = speakerPos.y + offsetY;
-
-            particle.style.position = 'absolute';
-            particle.style.left = startX + 'px';
-            particle.style.top = startY + 'px';
-
-            // Sprawdź kolor tła pod pozycją nutki
-            let r, g, b;
-            try {
-                const data = offCtx.getImageData(Math.floor(startX), Math.floor(startY), 1, 1).data;
-                [r, g, b] = data;
-            } catch {
-                r = g = b = 0;
-            }
-            const brightness = (r + g + b) / 3;
-            particle.style.color = brightness > 128 ? '#000' : '#fff';
-
-            musicParticles.appendChild(particle);
-            
-            // Cel: pozycja kursora z lekką losowością
-            const targetX = mouseX + (Math.random() - 0.5) * 100;
-            const targetY = mouseY + (Math.random() - 0.5) * 100;
-            
-            // Oblicz dystans i kierunek
-            const deltaX = targetX - startX;
-            const deltaY = targetY - startY;
-            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-            
-            // Parametry spirali - wpływ prędkości kursora
-            const speedInfluence = Math.min(mouseSpeed / 10, 2);
-            const spiralIntensity = 1.5 + speedInfluence; // intensywność wirowania zależna od prędkości
-            const spiralRadius = Math.min(100, distance * 0.3 + speedInfluence * 20); // promień spirali
-            const rotations = 2 + Math.random() * 2 + speedInfluence; // więcej obrotów przy szybkim ruchu
-            
-            // Czas animacji zależny od dystansu i prędkości kursora
-            const baseSpeed = Math.max(800, Math.min(2000, distance * 1.5));
-            const duration = baseSpeed / (1 + speedInfluence * 0.5); // szybsze przy szybkim ruchu kursora
-            
-            // Dodaj efekt spiralny poprzez keyframes
-            const keyframes = [];
-            const steps = 30; // więcej kroków dla płynniejszej spirali
-            
-            for (let i = 0; i <= steps; i++) {
-                const progress = i / steps;
-                const angle = rotations * 2 * Math.PI * progress;
-                const radius = spiralRadius * (1 - progress * 0.7); // zmniejszający się promień
-                
-                // Pozycja na spirali - wpływ prędkości kursora na chaotyczność
-                const chaosMultiplier = 1 + mouseSpeed / 20;
-                const spiralX = Math.cos(angle) * radius * chaosMultiplier;
-                const spiralY = Math.sin(angle) * radius * chaosMultiplier;
-                
-                // Pozycja główna (ruch w kierunku celu - kursora)
-                const mainX = deltaX * progress;
-                const mainY = deltaY * progress;
-                
-                // Dodaj lekki chaos przy szybkim ruchu kursora
-                const chaosFactor = mouseSpeed > 10 ? (Math.random() - 0.5) * mouseSpeed : 0;
-                
-                keyframes.push({
-                    transform: `translate(${mainX + spiralX + chaosFactor}px, ${mainY + spiralY + chaosFactor}px) rotate(${angle * 180 / Math.PI}deg) scale(${1 + speedInfluence * 0.2})`,
-                    opacity: 1,
-                    offset: progress
-                });
-            }
-            
-            // Dodaj fade out na końcu
-            keyframes[keyframes.length - 1].opacity = 0;
-            
-            particle.animate(keyframes, {
-                duration: duration,
-                easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
-            });
+        // BANNER FUNCTIONS
+        function acceptSound() {
+            // Start circle transition
+            circleTransition.style.left = mouseX + 'px';
+            circleTransition.style.top = mouseY + 'px';
+            circleTransition.classList.add('expanding');
             
             setTimeout(() => {
-                if (particle.parentNode) {
-                    musicParticles.removeChild(particle);
-                }
-            }, duration);
+                banner.classList.add('hidden');
+                mainContent.classList.add('visible');
+                initMainContent();
+            }, 750);
+            
+            setTimeout(() => {
+                circleTransition.style.display = 'none';
+            }, 1500);
         }
 
-        function startMusicParticles() {
-            // Zatrzymaj istniejące interwały przed uruchomieniem nowych
-            stopMusicParticles();
-            
-            // Zwiększ częstotliwość tworzenia nutek (więcej nutek)
-            particleInterval = setInterval(() => {
-                createMusicParticle();
-            }, 120); // co 120ms dla większej ilości nutek
-            
-            // Dodaj dodatkowy interval dla jeszcze większej ilości nutek
-            extraParticleInterval = setInterval(() => {
-                if (Math.random() > 0.3) { // 70% szansy na dodatkową nutkę
+        function declineSound() {
+            alert('Sound is required to fully experience KLUB ZAPROSZENIE');
+        }
+
+        // MAIN CONTENT INITIALIZATION (from original code)
+        function initMainContent() {
+            // All the original JavaScript code goes here
+            const logoFiles = ['KZ1.png', 'KZ2.png', 'KZ3.png', 'KZ4.png', 'KZ5.png', 'KZ6.png'];
+
+            let isDragging = false;
+            let startX = 0;
+            let currentRotation = 0;
+            let isFlipped = false;
+            let particleInterval;
+            let extraParticleInterval;
+            let permissionGranted = false;
+            let hintTimeout;
+
+            let lastMouseX = 0;
+            let lastMouseY = 0;
+            let mouseSpeed = 0;
+            let speedHistory = [];
+            let lastMouseUpdate = Date.now();
+
+            const audio = new Audio('muza.mp3');
+            audio.loop = true;
+            audio.preservesPitch = false;
+
+            const page1 = document.getElementById('page1');
+            const musicParticles = document.getElementById('musicParticles');
+            const book = document.getElementById('book');
+            const swipeHint = document.getElementById('swipeHint');
+            const randomLogo = document.getElementById('randomLogo');
+            const bigLogoBg = document.getElementById('bigLogoBg');
+            const speakerImg = document.getElementById('speakerImg');
+
+            const offCanvas = document.createElement('canvas');
+            const offCtx = offCanvas.getContext('2d');
+
+            document.addEventListener('mousemove', (e) => {
+                lastMouseX = mouseX;
+                lastMouseY = mouseY;
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+                
+                const now = Date.now();
+                const timeDelta = now - lastMouseUpdate;
+                
+                if (timeDelta > 16) {
+                    const distance = Math.sqrt(
+                        Math.pow(mouseX - lastMouseX, 2) + 
+                        Math.pow(mouseY - lastMouseY, 2)
+                    );
+                    const currentSpeed = distance / timeDelta * 16;
+                    
+                    speedHistory.push(currentSpeed);
+                    if (speedHistory.length > 10) {
+                        speedHistory.shift();
+                    }
+                    
+                    mouseSpeed = speedHistory.reduce((a, b) => a + b, 0) / speedHistory.length;
+                    
+                    if (isFlipped && permissionGranted && !audio.paused) {
+                        const basePlaybackRate = 1.0;
+                        const speedMultiplier = Math.max(0.5, Math.min(2.0, 1.0 + (mouseSpeed - 5) * 0.1));
+                        audio.playbackRate = basePlaybackRate * speedMultiplier;
+                    }
+                    
+                    lastMouseUpdate = now;
+                }
+            });
+
+            function resizeCanvas() {
+                offCanvas.width = window.innerWidth;
+                offCanvas.height = window.innerHeight;
+                drawBgToCanvas();
+            }
+
+            function drawBgToCanvas() {
+                if (!bigLogoBg.complete) return;
+                offCtx.clearRect(0, 0, offCanvas.width, offCanvas.height);
+                offCtx.drawImage(bigLogoBg, 0, 0, offCanvas.width, offCanvas.height);
+            }
+
+            bigLogoBg.addEventListener('load', () => {
+                resizeCanvas();
+            });
+
+            window.addEventListener('resize', () => {
+                resizeCanvas();
+            });
+
+            function setRandomLogo() {
+                const idx = Math.floor(Math.random() * logoFiles.length);
+                const chosen = logoFiles[idx];
+                randomLogo.src = chosen;
+                bigLogoBg.src = chosen;
+            }
+            setRandomLogo();
+
+            function getSpeakerPosition() {
+                const speakerRect = speakerImg.getBoundingClientRect();
+                return {
+                    x: speakerRect.left + speakerRect.width / 2,
+                    y: speakerRect.top + speakerRect.height / 2
+                };
+            }
+
+            function createMusicParticle() {
+                if (!isFlipped) return;
+                
+                const particle = document.createElement('div');
+                particle.classList.add('particle');
+                const noteEmojis = ['♪', '♫', '♩', '♬', '𝄞', '𝄢'];
+                particle.textContent = noteEmojis[Math.floor(Math.random() * noteEmojis.length)];
+                
+                const speakerPos = getSpeakerPosition();
+                const offsetX = (Math.random() - 0.5) * 20;
+                const offsetY = (Math.random() - 0.5) * 20;
+                const startX = speakerPos.x + offsetX;
+                const startY = speakerPos.y + offsetY;
+
+                particle.style.position = 'absolute';
+                particle.style.left = startX + 'px';
+                particle.style.top = startY + 'px';
+
+                let r, g, b;
+                try {
+                    const data = offCtx.getImageData(Math.floor(startX), Math.floor(startY), 1, 1).data;
+                    [r, g, b] = data;
+                } catch {
+                    r = g = b = 0;
+                }
+                const brightness = (r + g + b) / 3;
+                particle.style.color = brightness > 128 ? '#000' : '#fff';
+
+                musicParticles.appendChild(particle);
+                
+                const targetX = mouseX + (Math.random() - 0.5) * 100;
+                const targetY = mouseY + (Math.random() - 0.5) * 100;
+                
+                const deltaX = targetX - startX;
+                const deltaY = targetY - startY;
+                const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                
+                const speedInfluence = Math.min(mouseSpeed / 10, 2);
+                const spiralIntensity = 1.5 + speedInfluence;
+                const spiralRadius = Math.min(100, distance * 0.3 + speedInfluence * 20);
+                const rotations = 2 + Math.random() * 2 + speedInfluence;
+                
+                const baseSpeed = Math.max(800, Math.min(2000, distance * 1.5));
+                const duration = baseSpeed / (1 + speedInfluence * 0.5);
+                
+                const keyframes = [];
+                const steps = 30;
+                
+                for (let i = 0; i <= steps; i++) {
+                    const progress = i / steps;
+                    const angle = rotations * 2 * Math.PI * progress;
+                    const radius = spiralRadius * (1 - progress * 0.7);
+                    
+                    const chaosMultiplier = 1 + mouseSpeed / 20;
+                    const spiralX = Math.cos(angle) * radius * chaosMultiplier;
+                    const spiralY = Math.sin(angle) * radius * chaosMultiplier;
+                    
+                    const mainX = deltaX * progress;
+                    const mainY = deltaY * progress;
+                    
+                    const chaosFactor = mouseSpeed > 10 ? (Math.random() - 0.5) * mouseSpeed : 0;
+                    
+                    keyframes.push({
+                        transform: `translate(${mainX + spiralX + chaosFactor}px, ${mainY + spiralY + chaosFactor}px) rotate(${angle * 180 / Math.PI}deg) scale(${1 + speedInfluence * 0.2})`,
+                        opacity: 1,
+                        offset: progress
+                    });
+                }
+                
+                keyframes[keyframes.length - 1].opacity = 0;
+                
+                particle.animate(keyframes, {
+                    duration: duration,
+                    easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+                });
+                
+                setTimeout(() => {
+                    if (particle.parentNode) {
+                        musicParticles.removeChild(particle);
+                    }
+                }, duration);
+            }
+
+            function startMusicParticles() {
+                stopMusicParticles();
+                
+                particleInterval = setInterval(() => {
                     createMusicParticle();
-                }
-            }, 80);
-        }
-
-        function stopMusicParticles() {
-            // Zatrzymaj główny interwał
-            if (particleInterval) {
-                clearInterval(particleInterval);
-                particleInterval = null;
+                }, 120);
+                
+                extraParticleInterval = setInterval(() => {
+                    if (Math.random() > 0.3) {
+                        createMusicParticle();
+                    }
+                }, 80);
             }
-            
-            // Zatrzymaj dodatkowy interwał
-            if (extraParticleInterval) {
-                clearInterval(extraParticleInterval);
-                extraParticleInterval = null;
-            }
-            
-            // Usuń wszystkie istniejące nutki
-            const existingParticles = musicParticles.querySelectorAll('.particle');
-            existingParticles.forEach(particle => {
-                if (particle.parentNode) {
-                    musicParticles.removeChild(particle);
-                }
-            });
-        }
 
-        // Odblokowanie odtwarzania muzyki przy pierwszym kliknięciu w książkę
-        book.addEventListener('click', () => {
-            if (!permissionGranted) {
-                audio.play().then(() => {
-                    audio.pause();
-                    permissionGranted = true;
-                }).catch(() => {
-                    console.log('Audio autoplay blocked');
+            function stopMusicParticles() {
+                if (particleInterval) {
+                    clearInterval(particleInterval);
+                    particleInterval = null;
+                }
+                
+                if (extraParticleInterval) {
+                    clearInterval(extraParticleInterval);
+                    extraParticleInterval = null;
+                }
+                
+                const existingParticles = musicParticles.querySelectorAll('.particle');
+                existingParticles.forEach(particle => {
+                    if (particle.parentNode) {
+                        musicParticles.removeChild(particle);
+                    }
                 });
             }
-        }, { once: true });
 
-        function showSwipeHint() {
-            if (!isFlipped) {
-                swipeHint.classList.add('show');
+            book.addEventListener('click', () => {
+                if (!permissionGranted) {
+                    audio.play().then(() => {
+                        audio.pause();
+                        permissionGranted = true;
+                    }).catch(() => {
+                        console.log('Audio autoplay blocked');
+                    });
+                }
+            }, { once: true });
+
+            function showSwipeHint() {
+                if (!isFlipped) {
+                    swipeHint.classList.add('show');
+                }
             }
-        }
 
-        function hideSwipeHint() {
-            swipeHint.classList.remove('show');
-        }
-
-        function resetHintTimer() {
-            clearTimeout(hintTimeout);
-            hideSwipeHint();
-            if (!isFlipped) {
-                hintTimeout = setTimeout(showSwipeHint, 7000);
+            function hideSwipeHint() {
+                swipeHint.classList.remove('show');
             }
-        }
 
-        resetHintTimer();
+            function resetHintTimer() {
+                clearTimeout(hintTimeout);
+                hideSwipeHint();
+                if (!isFlipped) {
+                    hintTimeout = setTimeout(showSwipeHint, 7000);
+                }
+            }
 
-        document.addEventListener('mousedown', startDrag);
-        document.addEventListener('touchstart', handleTouchStart, { passive: false });
-
-        function startDrag(e) {
             resetHintTimer();
-            
-            if (e.target.classList.contains('btn')) {
-                return;
+
+            document.addEventListener('mousedown', startDrag);
+            document.addEventListener('touchstart', handleTouchStart, { passive: false });
+
+            function startDrag(e) {
+                resetHintTimer();
+                
+                if (e.target.classList.contains('btn')) {
+                    return;
+                }
+                
+                const bookRect = book.getBoundingClientRect();
+                const clickX = (e.type === 'touchstart') ? e.touches[0].clientX : e.clientX;
+                const clickY = (e.type === 'touchstart') ? e.touches[0].clientY : e.clientY;
+                const relativeX = clickX - bookRect.left;
+                const relativeY = clickY - bookRect.top;
+                const bookWidth = bookRect.width;
+                const bookHeight = bookRect.height;
+                
+                const inBookArea = relativeX >= 0 && relativeX <= bookWidth && relativeY >= 0 && relativeY <= bookHeight;
+                const inFlippedArea = isFlipped && relativeX < 0 && relativeX > -bookWidth && relativeY > 0 && relativeY < bookHeight;
+                
+                let shouldReact = false;
+                if (!isFlipped && inBookArea) {
+                    shouldReact = true;
+                } else if (isFlipped && (inBookArea || inFlippedArea)) {
+                    shouldReact = true;
+                }
+                if (!shouldReact) return;
+                
+                e.preventDefault();
+                e.stopPropagation();
+                
+                isDragging = true;
+                startX = clickX;
+                page1.classList.add('dragging');
+                page1.style.transition = 'none';
+                
+                document.addEventListener('mousemove', drag);
+                document.addEventListener('mouseup', endDrag);
+                document.addEventListener('touchmove', handleTouchMove, { passive: false });
+                document.addEventListener('touchend', handleTouchEnd);
             }
-            
-            const bookRect = book.getBoundingClientRect();
-            const clickX = (e.type === 'touchstart') ? e.touches[0].clientX : e.clientX;
-            const clickY = (e.type === 'touchstart') ? e.touches[0].clientY : e.clientY;
-            const relativeX = clickX - bookRect.left;
-            const relativeY = clickY - bookRect.top;
-            const bookWidth = bookRect.width;
-            const bookHeight = bookRect.height;
-            
-            const inBookArea = relativeX >= 0 && relativeX <= bookWidth && relativeY >= 0 && relativeY <= bookHeight;
-            const inFlippedArea = isFlipped && relativeX < 0 && relativeX > -bookWidth && relativeY > 0 && relativeY < bookHeight;
-            
-            let shouldReact = false;
-            if (!isFlipped && inBookArea) {
-                shouldReact = true;
-            } else if (isFlipped && (inBookArea || inFlippedArea)) {
-                shouldReact = true;
+
+            function drag(e) {
+                if (!isDragging) return;
+                
+                const clientX = (e.type === 'touchmove') ? e.touches[0].clientX : e.clientX;
+                const deltaX = clientX - startX;
+                const sensitivity = 0.8;
+                let rotation;
+                
+                if (isFlipped) {
+                    rotation = Math.max(-180, Math.min(0, -180 + deltaX * sensitivity));
+                } else {
+                    rotation = Math.max(-180, Math.min(0, deltaX * sensitivity));
+                }
+                
+                page1.style.transform = `rotateY(${rotation}deg)`;
             }
-            if (!shouldReact) return;
-            
-            e.preventDefault();
-            e.stopPropagation();
-            
-            isDragging = true;
-            startX = clickX;
-            page1.classList.add('dragging');
-            page1.style.transition = 'none';
-            
-            document.addEventListener('mousemove', drag);
-            document.addEventListener('mouseup', endDrag);
-            document.addEventListener('touchmove', handleTouchMove, { passive: false });
-            document.addEventListener('touchend', handleTouchEnd);
-        }
 
-        function drag(e) {
-            if (!isDragging) return;
-            
-            const clientX = (e.type === 'touchmove') ? e.touches[0].clientX : e.clientX;
-            const deltaX = clientX - startX;
-            const sensitivity = 0.8;
-            let rotation;
-            
-            if (isFlipped) {
-                rotation = Math.max(-180, Math.min(0, -180 + deltaX * sensitivity));
-            } else {
-                rotation = Math.max(-180, Math.min(0, deltaX * sensitivity));
+            function endDrag(e) {
+                if (!isDragging) return;
+                
+                isDragging = false;
+                page1.classList.remove('dragging');
+                page1.style.transition = 'transform 0.8s ease-out';
+                
+                const clientX = (e.type === 'touchend' && e.changedTouches) ? e.changedTouches[0].clientX : e.clientX;
+                const deltaX = clientX - startX;
+                const threshold = 60;
+                
+                if (deltaX < -threshold && !isFlipped) {
+                    flipPage();
+                } else if (deltaX > threshold && isFlipped) {
+                    unflipPage();
+                } else {
+                    resetPage();
+                }
+                
+                document.removeEventListener('mousemove', drag);
+                document.removeEventListener('mouseup', endDrag);
+                document.removeEventListener('touchmove', handleTouchMove);
+                document.removeEventListener('touchend', handleTouchEnd);
             }
-            
-            page1.style.transform = `rotateY(${rotation}deg)`;
-        }
 
-        function endDrag(e) {
-            if (!isDragging) return;
-            
-            isDragging = false;
-            page1.classList.remove('dragging');
-            page1.style.transition = 'transform 0.8s ease-out';
-            
-            const clientX = (e.type === 'touchend' && e.changedTouches) ? e.changedTouches[0].clientX : e.clientX;
-            const deltaX = clientX - startX;
-            const threshold = 60;
-            
-            if (deltaX < -threshold && !isFlipped) {
-                flipPage();
-            } else if (deltaX > threshold && isFlipped) {
-                unflipPage();
-            } else {
-                resetPage();
+            function handleTouchStart(e) {
+                e.preventDefault();
+                startDrag(e);
             }
-            
-            document.removeEventListener('mousemove', drag);
-            document.removeEventListener('mouseup', endDrag);
-            document.removeEventListener('touchmove', handleTouchMove);
-            document.removeEventListener('touchend', handleTouchEnd);
-        }
 
-        function handleTouchStart(e) {
-            e.preventDefault();
-            startDrag(e);
-        }
-
-        function handleTouchMove(e) {
-            e.preventDefault();
-            drag(e);
-        }
-
-        function handleTouchEnd(e) {
-            e.preventDefault();
-            endDrag(e);
-        }
-
-        function flipPage() {
-            isFlipped = true;
-            currentRotation = -180;
-            page1.classList.add('flipped');
-            page1.style.transform = 'rotateY(-180deg)';
-            page1.style.zIndex = '1';
-            
-            hideSwipeHint();
-            clearTimeout(hintTimeout);
-            
-            if (permissionGranted) {
-                audio.currentTime = 0;
-                audio.playbackRate = 1.0; // Reset playback rate
-                audio.play();
+            function handleTouchMove(e) {
+                e.preventDefault();
+                drag(e);
             }
-            startMusicParticles();
-        }
 
-        function unflipPage() {
-            isFlipped = false;
-            currentRotation = 0;
-            page1.classList.remove('flipped');
-            page1.style.transform = 'rotateY(0deg)';
-            page1.style.zIndex = '3';
-            
-            resetHintTimer();
-            
-            audio.pause();
-            audio.playbackRate = 1.0; // Reset playback rate
-            stopMusicParticles();
-        }
+            function handleTouchEnd(e) {
+                e.preventDefault();
+                endDrag(e);
+            }
 
-        function resetPage() {
-            const targetRotation = isFlipped ? -180 : 0;
-            page1.style.transition = 'transform 0.6s ease-out';
-            page1.style.transform = `rotateY(${targetRotation}deg)`;
-            setTimeout(() => {
-                page1.style.transition = '';
-            }, 600);
-        }
+            function flipPage() {
+                isFlipped = true;
+                currentRotation = -180;
+                page1.classList.add('flipped');
+                page1.style.transform = 'rotateY(-180deg)';
+                page1.style.zIndex = '1';
+                
+                hideSwipeHint();
+                clearTimeout(hintTimeout);
+                
+                if (permissionGranted) {
+                    audio.currentTime = 0;
+                    audio.playbackRate = 1.0;
+                    audio.play();
+                }
+                startMusicParticles();
+            }
 
-        function handleButtonClick(action) {
-            switch(action) {
-                case 'archive':
-                    alert('Otwieranie archiwum...');
-                    break;
-                case 'info':
-                    alert('Wyświetlanie informacji...');
-                    break;
-                case 'about':
-                    alert('O aplikacji...');
-                    break;
+            function unflipPage() {
+                isFlipped = false;
+                currentRotation = 0;
+                page1.classList.remove('flipped');
+                page1.style.transform = 'rotateY(0deg)';
+                page1.style.zIndex = '3';
+                
+                resetHintTimer();
+                
+                audio.pause();
+                audio.playbackRate = 1.0;
+                stopMusicParticles();
+            }
+
+            function resetPage() {
+                const targetRotation = isFlipped ? -180 : 0;
+                page1.style.transition = 'transform 0.6s ease-out';
+                page1.style.transform = `rotateY(${targetRotation}deg)`;
+                setTimeout(() => {
+                    page1.style.transition = '';
+                }, 600);
+            }
+
+            window.handleButtonClick = function(action) {
+                switch(action) {
+                    case 'archive':
+                        alert('Otwieranie archiwum...');
+                        break;
+                    case 'info':
+                        alert('Wyświetlanie informacji...');
+                        break;
+                    case 'about':
+                        alert('O aplikacji...');
+                        break;
+                }
             }
         }
     </script>
