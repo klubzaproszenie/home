@@ -598,23 +598,51 @@
             const audio = new Audio('muza.mp3');
             audio.loop = true;
             
-            // Create AudioContext and nodes for pitch control
+            // Create AudioContext and nodes for smooth audio control
             let audioContext;
             let source;
-            let pitchShifter;
+            let gainNode;
+            let analyser;
+            
+            // Smoothing variables
+            let targetPlaybackRate = 1.0;
+            let currentPlaybackRate = 1.0;
+            const smoothingFactor = 0.05; // How quickly to interpolate
             
             try {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 
-                // Create media element source
+                // Create nodes
                 source = audioContext.createMediaElementSource(audio);
+                gainNode = audioContext.createGain();
+                analyser = audioContext.createAnalyser();
                 
-                // Create pitch shifter using playback rate (simple approach)
-                // For true pitch shifting, you'd need a more complex solution
-                source.connect(audioContext.destination);
+                // Connect nodes
+                source.connect(gainNode);
+                gainNode.connect(analyser);
+                analyser.connect(audioContext.destination);
+                
+                // Set initial gain
+                gainNode.gain.value = 1.0;
             } catch (e) {
-                console.log('Web Audio API not supported');
+                console.log('Web Audio API not supported:', e);
             }
+            
+            // Smooth audio update loop
+            function updateAudioSmooth() {
+                if (isFlipped && !audio.paused) {
+                    // Smooth interpolation
+                    currentPlaybackRate += (targetPlaybackRate - currentPlaybackRate) * smoothingFactor;
+                    
+                    // Apply the smoothed playback rate
+                    if (Math.abs(currentPlaybackRate - audio.playbackRate) > 0.01) {
+                        audio.playbackRate = currentPlaybackRate;
+                    }
+                }
+                
+                requestAnimationFrame(updateAudioSmooth);
+            }
+            updateAudioSmooth();
 
             const page1 = document.getElementById('page1');
             const musicParticles = document.getElementById('musicParticles');
@@ -978,11 +1006,13 @@
                 hideSwipeHint();
                 clearTimeout(hintTimeout);
                 
-                // Enhanced audio playing with multiple fallbacks
+                // Reset audio parameters for smooth start
+                targetPlaybackRate = 1.0;
+                currentPlaybackRate = 1.0;
+                audio.preservesPitch = false;
                 audio.currentTime = 0;
-                audio.playbackRate = 1.0;
                 
-                // First attempt
+                // Enhanced audio playing with multiple fallbacks
                 const playAudio = () => {
                     // Resume AudioContext if needed
                     if (audioContext && audioContext.state === 'suspended') {
@@ -994,6 +1024,12 @@
                         playPromise.then(() => {
                             console.log('Audio playing successfully');
                             permissionGranted = true;
+                            
+                            // Fade in the audio smoothly
+                            if (gainNode) {
+                                gainNode.gain.setValueAtTime(0.01, audioContext.currentTime);
+                                gainNode.gain.linearRampToValueAtTime(1.0, audioContext.currentTime + 0.5);
+                            }
                         }).catch(err => {
                             console.log('Audio play failed:', err);
                             
