@@ -159,7 +159,39 @@
             font-weight: bold;
         }
 
-        /* Duże losowe logo w tle: obniżone i półprzezroczyste */
+        /* Visual cursor crosshair */
+        .cursor-crosshair {
+            position: fixed;
+            pointer-events: none;
+            z-index: 999;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .cursor-crosshair.active {
+            opacity: 0.6;
+        }
+
+        .crosshair-line {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        .crosshair-h {
+            width: 100vw;
+            height: 1px;
+            left: -50vw;
+            top: 0;
+        }
+
+        .crosshair-v {
+            width: 1px;
+            height: 100vh;
+            left: 0;
+            top: -50vh;
+        }
+
+        /* Duże losowe logo w tle */
         #bigLogoBg {
             position: fixed;
             top: 60%;
@@ -423,16 +455,22 @@
     <div class="audio-control-indicator" id="audioIndicator">
         <div class="control-row">
             <span>Rate:</span>
-            <span class="control-value" id="speedValue">1.00x</span>
+            <span class="control-value" id="rateValue">1.00x</span>
         </div>
         <div class="control-row">
             <span>Pitch:</span>
             <span class="control-value" id="pitchValue">0 cents</span>
         </div>
         <div class="control-row">
-            <span>Mode:</span>
-            <span class="control-value" id="stretchValue">NATURAL</span>
+            <span>Volume:</span>
+            <span class="control-value" id="volumeValue">100%</span>
         </div>
+    </div>
+
+    <!-- Cursor Crosshair -->
+    <div class="cursor-crosshair" id="cursorCrosshair">
+        <div class="crosshair-line crosshair-h"></div>
+        <div class="crosshair-line crosshair-v"></div>
     </div>
 
     <!-- Main Content -->
@@ -441,7 +479,6 @@
         <img id="bigLogoBg" src="" alt="Duże Logo">
 
         <div class="book-container">
-            <!-- Napis 'swipe to open' wewnątrz książeczki, w prawym dolnym rogu okładki -->
             <div class="swipe-hint" id="swipeHint">swipe to open</div>
 
             <div class="book" id="book">
@@ -455,9 +492,7 @@
                 </div>
 
                 <div class="page page3" id="page3">
-                    <div class="page-front">
-                        <!-- Dodatkowa treść drugiej strony, jeśli potrzeba -->
-                    </div>
+                    <div class="page-front"></div>
                 </div>
 
                 <div class="buttons-container" id="buttonsContainer">
@@ -520,9 +555,7 @@
                 ctx.lineCap = 'round';
                 ctx.lineJoin = 'round';
                 
-                // Unlock audio on drawing (especially important for mobile)
                 if (!audioPermissionGranted) {
-                    // Create a silent audio to unlock permissions
                     const silentAudio = new Audio();
                     silentAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQQAAAAAAAAAAAEA';
                     silentAudio.play().then(() => {
@@ -550,7 +583,7 @@
             
             if (!hasDrawn) {
                 hasDrawn = true;
-                setTimeout(startTransition, 500); // Start transition after a short delay
+                setTimeout(startTransition, 500);
             }
         }
 
@@ -594,10 +627,7 @@
             if (transitionStarted) return;
             transitionStarted = true;
             
-            // Hide arm cursor
             armCursor.style.display = 'none';
-            
-            // Simple fade transition
             banner.style.transition = 'opacity 1s ease-out';
             banner.style.opacity = '0';
             
@@ -610,7 +640,6 @@
 
         // Initialize main page functionality
         function initMainPage() {
-            // Lista plików z logo (te same, co na książeczce)
             const logoFiles = ['KZ1.png', 'KZ2.png', 'KZ3.png', 'KZ4.png', 'KZ5.png', 'KZ6.png'];
 
             let isDragging = false;
@@ -627,213 +656,176 @@
             let mouseY = 0;
             let isAudioControlActive = false;
 
-            // Advanced audio system for time-stretching and pitch shifting
+            // Web Audio API setup for seamless playback
             let audioContext;
-            let source;
-            let gainNode;
-            let analyser;
-            let pitchShiftNode;
-            let timeStretchProcessor;
-            
-            // Audio processing parameters
-            let currentPitch = 0; // in cents (-1200 to +1200)
-            let currentSpeed = 1.0; // speed multiplier
-            let isTimeStretchEnabled = false;
-            
-            // Time-stretch algorithm variables
-            const BUFFER_SIZE = 4096;
-            const OVERLAP_RATIO = 0.25;
-            const MAX_STRETCH_RATIO = 4.0;
             let audioBuffer = null;
-            let stretchBuffer = [];
-            let stretchIndex = 0;
-
-            const audio = new Audio('muza.mp3');
-            audio.loop = true;
-            audio.crossOrigin = 'anonymous';
+            let currentSource = null;
+            let gainNode = null;
+            let filterNode = null;
+            let analyserNode = null;
             
+            // Playback control variables
+            let startTime = 0;
+            let pauseTime = 0;
+            let isPlaying = false;
+            let currentRate = 1.0;
+            let currentPitch = 0;
+            let currentVolume = 1.0;
+
+            // Smooth parameter interpolation
+            let targetRate = 1.0;
+            let targetVolume = 1.0;
+            const SMOOTHING_FACTOR = 0.92; // Higher = smoother but slower response
+
             // UI elements
             const audioIndicator = document.getElementById('audioIndicator');
+            const rateValue = document.getElementById('rateValue');
             const pitchValue = document.getElementById('pitchValue');
-            const speedValue = document.getElementById('speedValue');
-            const stretchValue = document.getElementById('stretchValue');
+            const volumeValue = document.getElementById('volumeValue');
+            const cursorCrosshair = document.getElementById('cursorCrosshair');
 
-            // Initialize Web Audio API with advanced processing
-            try {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                
-                // Create audio graph
-                source = audioContext.createMediaElementSource(audio);
-                gainNode = audioContext.createGain();
-                analyser = audioContext.createAnalyser();
-                
-                // Create custom pitch shift using delay and modulation
-                pitchShiftNode = createPitchShiftProcessor();
-                
-                // Connect the audio graph
-                source.connect(pitchShiftNode);
-                pitchShiftNode.connect(gainNode);
-                gainNode.connect(analyser);
-                analyser.connect(audioContext.destination);
-                
-                gainNode.gain.value = 1.0;
-                
-                console.log('Advanced audio processing initialized');
-            } catch (e) {
-                console.log('Advanced Web Audio API not supported:', e);
-            }
-
-            // Create pitch shift processor using granular synthesis approach
-            function createPitchShiftProcessor() {
-                const scriptProcessor = audioContext.createScriptProcessor(BUFFER_SIZE, 1, 1);
-                
-                scriptProcessor.onaudioprocess = function(event) {
-                    const inputBuffer = event.inputBuffer;
-                    const outputBuffer = event.outputBuffer;
-                    const inputData = inputBuffer.getChannelData(0);
-                    const outputData = outputBuffer.getChannelData(0);
+            // Initialize Web Audio API
+            async function initAudio() {
+                try {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
                     
-                    if (isTimeStretchEnabled && currentSpeed !== 1.0) {
-                        // Apply time-stretching with pitch preservation
-                        processTimeStretch(inputData, outputData);
-                    } else {
-                        // Apply simple pitch shifting
-                        processPitchShift(inputData, outputData);
-                    }
-                };
-                
-                return scriptProcessor;
-            }
-
-            // Time-stretch algorithm using overlap-add technique
-            function processTimeStretch(inputData, outputData) {
-                const stretchRatio = 1.0 / currentSpeed;
-                const frameSize = Math.floor(BUFFER_SIZE * OVERLAP_RATIO);
-                const hopSize = Math.floor(frameSize * (1 - OVERLAP_RATIO));
-                
-                // Initialize stretch buffer if needed
-                if (stretchBuffer.length === 0) {
-                    stretchBuffer = new Float32Array(BUFFER_SIZE * 4);
-                }
-                
-                // Process overlapping frames
-                for (let i = 0; i < inputData.length; i += hopSize) {
-                    const frameStart = i;
-                    const frameEnd = Math.min(frameStart + frameSize, inputData.length);
+                    // Create audio nodes
+                    gainNode = audioContext.createGain();
+                    filterNode = audioContext.createBiquadFilter();
+                    analyserNode = audioContext.createAnalyser();
                     
-                    // Extract frame
-                    const frame = inputData.slice(frameStart, frameEnd);
+                    // Configure filter for smooth frequency response
+                    filterNode.type = 'lowpass';
+                    filterNode.frequency.value = 22050;
+                    filterNode.Q.value = 0.7;
                     
-                    // Apply window function (Hann window)
-                    for (let j = 0; j < frame.length; j++) {
-                        const windowValue = 0.5 * (1 - Math.cos(2 * Math.PI * j / (frame.length - 1)));
-                        frame[j] *= windowValue;
-                    }
+                    // Connect audio graph
+                    gainNode.connect(filterNode);
+                    filterNode.connect(analyserNode);
+                    analyserNode.connect(audioContext.destination);
                     
-                    // Calculate output position with stretch ratio
-                    const outputPos = Math.floor(frameStart * stretchRatio);
+                    // Load audio file
+                    await loadAudioFile('muza.mp3');
                     
-                    // Overlap-add to stretch buffer
-                    for (let j = 0; j < frame.length && outputPos + j < stretchBuffer.length; j++) {
-                        stretchBuffer[outputPos + j] += frame[j];
-                    }
-                }
-                
-                // Copy from stretch buffer to output with pitch adjustment
-                for (let i = 0; i < outputData.length; i++) {
-                    if (stretchIndex + i < stretchBuffer.length) {
-                        outputData[i] = stretchBuffer[stretchIndex + i];
-                        
-                        // Apply pitch shift to preserve pitch during time stretch
-                        if (currentPitch !== 0) {
-                            const pitchRatio = Math.pow(2, currentPitch / 1200);
-                            const sourceIndex = Math.floor(i * pitchRatio);
-                            if (sourceIndex < stretchBuffer.length - stretchIndex) {
-                                outputData[i] = stretchBuffer[stretchIndex + sourceIndex];
-                            }
-                        }
-                    } else {
-                        outputData[i] = 0;
-                    }
-                }
-                
-                // Advance stretch buffer index
-                stretchIndex += outputData.length;
-                if (stretchIndex >= stretchBuffer.length / 2) {
-                    // Shift buffer contents
-                    const halfLength = stretchBuffer.length / 2;
-                    for (let i = 0; i < halfLength; i++) {
-                        stretchBuffer[i] = stretchBuffer[i + halfLength];
-                        stretchBuffer[i + halfLength] = 0;
-                    }
-                    stretchIndex = 0;
+                    console.log('Web Audio API initialized successfully');
+                    return true;
+                } catch (error) {
+                    console.error('Failed to initialize Web Audio API:', error);
+                    return false;
                 }
             }
 
-            // Simple pitch shift using sample rate manipulation
-            function processPitchShift(inputData, outputData) {
-                if (currentPitch === 0) {
-                    // No pitch change, copy input to output
-                    for (let i = 0; i < outputData.length; i++) {
-                        outputData[i] = inputData[i] || 0;
-                    }
-                    return;
-                }
-                
-                const pitchRatio = Math.pow(2, currentPitch / 1200);
-                
-                for (let i = 0; i < outputData.length; i++) {
-                    const sourceIndex = i * pitchRatio;
-                    const lowerIndex = Math.floor(sourceIndex);
-                    const upperIndex = Math.ceil(sourceIndex);
-                    const fraction = sourceIndex - lowerIndex;
-                    
-                    // Linear interpolation
-                    if (lowerIndex < inputData.length && upperIndex < inputData.length) {
-                        const lowerSample = inputData[lowerIndex] || 0;
-                        const upperSample = inputData[upperIndex] || 0;
-                        outputData[i] = lowerSample + (upperSample - lowerSample) * fraction;
-                    } else {
-                        outputData[i] = 0;
-                    }
+            // Load audio file into buffer
+            async function loadAudioFile(url) {
+                try {
+                    const response = await fetch(url);
+                    const arrayBuffer = await response.arrayBuffer();
+                    audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                    console.log('Audio file loaded successfully');
+                } catch (error) {
+                    console.error('Failed to load audio file:', error);
+                    throw error;
                 }
             }
 
-            // Update audio parameters based on cursor position
-            function updateAudioFromCursor() {
-                if (!isFlipped || audio.paused) return;
+            // Create and start audio source with pitch shifting
+            function startAudioPlayback() {
+                if (!audioBuffer || !audioContext) return;
+
+                // Stop current source if playing
+                stopAudioPlayback();
+
+                // Create new buffer source
+                currentSource = audioContext.createBufferSource();
+                currentSource.buffer = audioBuffer;
+                currentSource.loop = true;
                 
+                // Connect to gain node
+                currentSource.connect(gainNode);
+                
+                // Calculate playback position
+                const currentTime = audioContext.currentTime;
+                const offset = pauseTime % audioBuffer.duration;
+                
+                // Start playback
+                currentSource.start(currentTime, offset);
+                startTime = currentTime - offset / currentRate;
+                isPlaying = true;
+                
+                console.log('Audio playback started');
+            }
+
+            // Stop current audio source
+            function stopAudioPlayback() {
+                if (currentSource) {
+                    try {
+                        currentSource.stop();
+                        currentSource.disconnect();
+                    } catch (e) {
+                        // Source already stopped
+                    }
+                    currentSource = null;
+                }
+                isPlaying = false;
+            }
+
+            // Update audio parameters with smooth interpolation
+            function updateAudioParameters() {
+                if (!isFlipped || !audioContext || !gainNode) return;
+
                 const screenWidth = window.innerWidth;
                 const screenHeight = window.innerHeight;
-                
-                // Calculate distance from center for natural control
                 const centerX = screenWidth / 2;
                 const centerY = screenHeight / 2;
-                const deltaX = mouseX - centerX;
-                const deltaY = mouseY - centerY;
-                
-                // Use Y-axis primarily for speed/pitch control (like a turntable)
-                const verticalInfluence = (centerY - mouseY) / centerY; // -1 to 1 (bottom to top)
-                
-                // Use X-axis for fine-tuning and modulation
-                const horizontalInfluence = deltaX / centerX; // -1 to 1 (left to right)
-                
-                // Base speed/pitch from Y position (turntable style)
-                const baseRate = 0.25 + (verticalInfluence + 1) * 1.875; // 0.25x to 4x
-                
-                // Add subtle horizontal modulation (±10% variation)
-                const modulation = horizontalInfluence * 0.1;
-                currentSpeed = Math.max(0.1, Math.min(4.0, baseRate + (baseRate * modulation)));
-                
-                // Natural pitch follows speed (like analog tape/vinyl)
-                currentPitch = (currentSpeed - 1.0) * 1200; // Convert speed ratio to cents
-                
-                // Use simple playback rate for natural sound
-                audio.playbackRate = currentSpeed;
-                
-                // Disable complex time-stretching for more natural feel
-                isTimeStretchEnabled = false;
-                
+
+                // Calculate normalized positions (-1 to 1)
+                const normalizedX = (mouseX - centerX) / centerX;
+                const normalizedY = (centerY - mouseY) / centerY;
+
+                // Y-axis controls rate (0.25x to 2.5x) with exponential curve for better feel
+                const rateRange = Math.pow(2, normalizedY * 1.32); // ±1.32 octaves
+                targetRate = Math.max(0.25, Math.min(2.5, rateRange));
+
+                // X-axis controls volume with smooth curve
+                targetVolume = Math.max(0.1, Math.min(1.0, 0.7 + normalizedX * 0.3));
+
+                // Calculate pitch change in cents (for display)
+                currentPitch = Math.log2(targetRate) * 1200;
+
+                // Smooth interpolation for rate changes
+                const rateDiff = targetRate - currentRate;
+                if (Math.abs(rateDiff) > 0.001) {
+                    const newRate = currentRate + rateDiff * (1 - SMOOTHING_FACTOR);
+                    
+                    // Apply rate change by restarting source with new rate
+                    if (isPlaying && Math.abs(newRate - currentRate) > 0.01) {
+                        const elapsed = (audioContext.currentTime - startTime) * currentRate;
+                        pauseTime = elapsed % audioBuffer.duration;
+                        currentRate = newRate;
+                        
+                        // Restart with new rate
+                        stopAudioPlayback();
+                        
+                        // Create new source with new rate
+                        currentSource = audioContext.createBufferSource();
+                        currentSource.buffer = audioBuffer;
+                        currentSource.loop = true;
+                        currentSource.playbackRate.value = currentRate;
+                        currentSource.connect(gainNode);
+                        
+                        const offset = pauseTime % audioBuffer.duration;
+                        currentSource.start(audioContext.currentTime, offset);
+                        startTime = audioContext.currentTime - offset / currentRate;
+                    }
+                }
+
+                // Smooth volume interpolation
+                const volumeDiff = targetVolume - currentVolume;
+                if (Math.abs(volumeDiff) > 0.001) {
+                    currentVolume += volumeDiff * (1 - SMOOTHING_FACTOR);
+                    gainNode.gain.linearRampToValueAtTime(currentVolume, audioContext.currentTime + 0.1);
+                }
+
                 // Update UI
                 updateAudioIndicator();
             }
@@ -841,27 +833,24 @@
             // Update the audio control indicator
             function updateAudioIndicator() {
                 if (isAudioControlActive) {
-                    const speedPercent = Math.round((currentSpeed - 1.0) * 100);
-                    const speedSign = speedPercent >= 0 ? '+' : '';
-                    
+                    rateValue.textContent = `${currentRate.toFixed(2)}x`;
                     pitchValue.textContent = `${Math.round(currentPitch)} cents`;
-                    speedValue.textContent = `${currentSpeed.toFixed(2)}x (${speedSign}${speedPercent}%)`;
-                    stretchValue.textContent = 'NATURAL';
-                    
+                    volumeValue.textContent = `${Math.round(currentVolume * 100)}%`;
                     audioIndicator.classList.add('active');
+                    cursorCrosshair.classList.add('active');
                 } else {
                     audioIndicator.classList.remove('active');
+                    cursorCrosshair.classList.remove('active');
                 }
             }
 
-            // Smooth audio parameter updates
+            // Audio update loop
             function audioUpdateLoop() {
-                if (isFlipped && !audio.paused) {
-                    updateAudioFromCursor();
+                if (isFlipped && isPlaying) {
+                    updateAudioParameters();
                 }
                 requestAnimationFrame(audioUpdateLoop);
             }
-            audioUpdateLoop();
 
             const page1 = document.getElementById('page1');
             const musicParticles = document.getElementById('musicParticles');
@@ -871,23 +860,20 @@
             const bigLogoBg = document.getElementById('bigLogoBg');
             const speakerImg = document.getElementById('speakerImg');
 
-            // Offscreen canvas do pobierania pikseli tła
-            const offCanvas = document.createElement('canvas');
-            const offCtx = offCanvas.getContext('2d');
-
             // Enhanced mouse tracking for audio control
             document.addEventListener('mousemove', (e) => {
                 mouseX = e.clientX;
                 mouseY = e.clientY;
                 
-                // Activate audio control when flipped
+                // Update crosshair position
+                cursorCrosshair.style.left = mouseX + 'px';
+                cursorCrosshair.style.top = mouseY + 'px';
+                
                 if (isFlipped) {
                     isAudioControlActive = true;
-                    updateAudioFromCursor();
                 }
             });
 
-            // Deactivate audio control when mouse leaves window
             document.addEventListener('mouseleave', () => {
                 isAudioControlActive = false;
                 updateAudioIndicator();
@@ -897,26 +883,6 @@
                 if (isFlipped) {
                     isAudioControlActive = true;
                 }
-            });
-
-            function resizeCanvas() {
-                offCanvas.width = window.innerWidth;
-                offCanvas.height = window.innerHeight;
-                drawBgToCanvas();
-            }
-
-            function drawBgToCanvas() {
-                if (!bigLogoBg.complete) return;
-                offCtx.clearRect(0, 0, offCanvas.width, offCanvas.height);
-                offCtx.drawImage(bigLogoBg, 0, 0, offCanvas.width, offCanvas.height);
-            }
-
-            bigLogoBg.addEventListener('load', () => {
-                resizeCanvas();
-            });
-
-            window.addEventListener('resize', () => {
-                resizeCanvas();
             });
 
             function setRandomLogo() {
@@ -936,7 +902,7 @@
             }
 
             function createMusicParticle() {
-                if (!isFlipped) return;
+                if (!isFlipped || !isPlaying) return;
                 
                 const particle = document.createElement('div');
                 particle.classList.add('particle');
@@ -944,74 +910,52 @@
                 particle.textContent = noteEmojis[Math.floor(Math.random() * noteEmojis.length)];
                 
                 const speakerPos = getSpeakerPosition();
-                const offsetX = (Math.random() - 0.5) * 20;
-                const offsetY = (Math.random() - 0.5) * 20;
+                const offsetX = (Math.random() - 0.5) * 30;
+                const offsetY = (Math.random() - 0.5) * 30;
                 const startX = speakerPos.x + offsetX;
                 const startY = speakerPos.y + offsetY;
 
                 particle.style.position = 'absolute';
                 particle.style.left = startX + 'px';
                 particle.style.top = startY + 'px';
-
-                let r, g, b;
-                try {
-                    const data = offCtx.getImageData(Math.floor(startX), Math.floor(startY), 1, 1).data;
-                    [r, g, b] = data;
-                } catch {
-                    r = g = b = 0;
-                }
-                const brightness = (r + g + b) / 3;
-                particle.style.color = brightness > 128 ? '#000' : '#fff';
+                particle.style.color = currentRate > 1.0 ? '#ff6b6b' : currentRate < 1.0 ? '#4ecdc4' : '#fff';
 
                 musicParticles.appendChild(particle);
                 
-                // Enhanced particle animation based on audio parameters
                 const targetX = mouseX;
                 const targetY = mouseY;
-                
                 const deltaX = targetX - startX;
                 const deltaY = targetY - startY;
                 
-                // Particle behavior influenced by playback rate (more natural)
-                const rateVariation = Math.abs(currentSpeed - 1.0); // 0 to 3
-                const intensity = Math.min(1.0, rateVariation);
-                
-                // More organic movement based on single rate parameter
-                const spiralRadius = 15 + intensity * 30;
-                const rotations = 0.5 + intensity * 1.5;
-                
-                // Speed affects particle duration and movement
-                const baseDuration = 1800;
-                const duration = baseDuration / Math.max(0.3, currentSpeed * 0.7);
+                // Particle behavior based on playback rate
+                const intensity = Math.abs(currentRate - 1.0);
+                const spiralRadius = 20 + intensity * 40;
+                const rotations = 0.5 + intensity;
+                const duration = Math.max(800, 2000 / Math.max(0.5, currentRate));
                 
                 const keyframes = [];
-                const steps = 30;
+                const steps = 25;
                 
                 for (let i = 0; i <= steps; i++) {
                     const progress = i / steps;
                     const easeProgress = 1 - Math.pow(1 - progress, 2);
                     
-                    // Organic spiral movement
                     const angle = rotations * 2 * Math.PI * progress;
                     const currentRadius = spiralRadius * (1 - progress * 0.8);
+                    const direction = currentRate > 1.0 ? 1 : -1;
                     
-                    // Direction influenced by speed (faster = more energetic)
-                    const direction = currentSpeed > 1.0 ? 1 : -1;
                     const spiralX = Math.cos(angle * direction) * currentRadius;
                     const spiralY = Math.sin(angle * direction) * currentRadius;
                     
                     const mainX = deltaX * easeProgress;
                     const mainY = deltaY * easeProgress;
                     
-                    // Rotation speed matches audio rate
-                    const rotation = angle * 180 / Math.PI * Math.max(0.5, currentSpeed);
-                    
-                    // Scale pulses with intensity
-                    const scalePulse = 1 + intensity * 0.3 * Math.sin(progress * Math.PI * 6);
+                    const rotation = angle * 180 / Math.PI * currentRate;
+                    const scale = 1 + intensity * 0.4 * Math.sin(progress * Math.PI * 3);
                     
                     keyframes.push({
-                        transform: `translate(${mainX + spiralX}px, ${mainY + spiralY}px) rotate(${rotation}deg) scale(${scalePulse})`,
-                        opacity: Math.max(0.4, 1 - progress * 0.6),
+                        transform: `translate(${mainX + spiralX}px, ${mainY + spiralY}px) rotate(${rotation}deg) scale(${scale})`,
+                        opacity: Math.max(0.2, 1 - progress * 0.8),
                         offset: progress
                     });
                 }
@@ -1031,9 +975,8 @@
             function startMusicParticles() {
                 stopMusicParticles();
                 
-                // Simpler particle frequency based on playback rate
-                const baseInterval = 180;
-                const rateMultiplier = Math.max(0.2, Math.min(2.5, currentSpeed));
+                const baseInterval = 200;
+                const rateMultiplier = Math.max(0.3, Math.min(2.0, currentRate));
                 const interval = baseInterval / rateMultiplier;
                 
                 particleInterval = setInterval(() => {
@@ -1041,12 +984,11 @@
                 }, interval);
                 
                 extraParticleInterval = setInterval(() => {
-                    // More particles when rate is extreme
-                    const intensity = Math.abs(currentSpeed - 1.0);
-                    if (Math.random() > Math.max(0.3, 0.8 - intensity)) {
+                    const intensity = Math.abs(currentRate - 1.0);
+                    if (Math.random() > Math.max(0.4, 0.9 - intensity)) {
                         createMusicParticle();
                     }
-                }, interval * 0.7);
+                }, interval * 0.8);
             }
 
             function stopMusicParticles() {
@@ -1068,33 +1010,22 @@
                 });
             }
 
-            // Update particle generation based on audio parameters
-            function updateParticleGeneration() {
-                if (isFlipped && particleInterval) {
-                    stopMusicParticles();
-                    startMusicParticles();
-                }
-            }
-
             // Audio unlock function
-            function unlockAudio() {
+            async function unlockAudio() {
                 if (!permissionGranted) {
-                    // Resume AudioContext if suspended
-                    if (audioContext && audioContext.state === 'suspended') {
-                        audioContext.resume();
-                    }
-                    
-                    // Try to play and immediately pause to unlock
-                    const playPromise = audio.play();
-                    if (playPromise !== undefined) {
-                        playPromise.then(() => {
-                            audio.pause();
-                            audio.currentTime = 0;
-                            permissionGranted = true;
-                            console.log('Audio unlocked successfully');
-                        }).catch(err => {
-                            console.log('Audio unlock failed:', err);
-                        });
+                    try {
+                        if (!audioContext) {
+                            await initAudio();
+                        }
+                        
+                        if (audioContext.state === 'suspended') {
+                            await audioContext.resume();
+                        }
+                        
+                        permissionGranted = true;
+                        console.log('Audio unlocked successfully');
+                    } catch (error) {
+                        console.log('Audio unlock failed:', error);
                     }
                 }
             }
@@ -1104,7 +1035,6 @@
                 document.addEventListener(eventType, unlockAudio, { once: true });
             });
 
-            // Specific unlock when clicking the book
             book.addEventListener('click', unlockAudio);
             book.addEventListener('touchstart', unlockAudio);
 
@@ -1228,7 +1158,7 @@
                 endDrag(e);
             }
 
-            function flipPage() {
+            async function flipPage() {
                 isFlipped = true;
                 currentRotation = -180;
                 page1.classList.add('flipped');
@@ -1238,47 +1168,42 @@
                 hideSwipeHint();
                 clearTimeout(hintTimeout);
                 
-                // Reset audio parameters
-                currentPitch = 0;
-                currentSpeed = 1.0;
-                isTimeStretchEnabled = false;
+                // Initialize audio if not already done
+                if (!audioContext) {
+                    await initAudio();
+                }
                 
                 // Resume AudioContext if needed
                 if (audioContext && audioContext.state === 'suspended') {
-                    audioContext.resume();
+                    await audioContext.resume();
                 }
                 
-                const playAudio = () => {
-                    const playPromise = audio.play();
-                    if (playPromise !== undefined) {
-                        playPromise.then(() => {
-                            console.log('Audio playing successfully with cursor control');
-                            permissionGranted = true;
-                            isAudioControlActive = true;
-                            
-                            // Fade in the audio smoothly
-                            if (gainNode) {
-                                gainNode.gain.setValueAtTime(0.01, audioContext.currentTime);
-                                gainNode.gain.linearRampToValueAtTime(1.0, audioContext.currentTime + 0.5);
-                            }
-                        }).catch(err => {
-                            console.log('Audio play failed:', err);
-                            
-                            if (!permissionGranted) {
-                                const retryPlay = () => {
-                                    audio.play().catch(e => console.log('Retry failed:', e));
-                                    document.removeEventListener('click', retryPlay);
-                                    document.removeEventListener('touchend', retryPlay);
-                                };
-                                document.addEventListener('click', retryPlay, { once: true });
-                                document.addEventListener('touchend', retryPlay, { once: true });
-                            }
-                        });
-                    }
-                };
+                // Reset audio parameters
+                currentRate = 1.0;
+                targetRate = 1.0;
+                currentVolume = 1.0;
+                targetVolume = 1.0;
+                currentPitch = 0;
+                pauseTime = 0;
                 
-                playAudio();
-                setTimeout(playAudio, 100);
+                // Start seamless audio playback
+                try {
+                    startAudioPlayback();
+                    isAudioControlActive = true;
+                    
+                    // Start update loop
+                    audioUpdateLoop();
+                    
+                    console.log('Audio playback started with seamless control');
+                    
+                    // Fade in
+                    if (gainNode) {
+                        gainNode.gain.setValueAtTime(0.01, audioContext.currentTime);
+                        gainNode.gain.linearRampToValueAtTime(1.0, audioContext.currentTime + 0.8);
+                    }
+                } catch (error) {
+                    console.error('Failed to start audio playback:', error);
+                }
                 
                 startMusicParticles();
             }
@@ -1292,14 +1217,16 @@
                 
                 resetHintTimer();
                 
-                // Reset audio parameters and stop
+                // Reset audio parameters
+                currentRate = 1.0;
+                targetRate = 1.0;
+                currentVolume = 1.0;
+                targetVolume = 1.0;
                 currentPitch = 0;
-                currentSpeed = 1.0;
-                isTimeStretchEnabled = false;
                 isAudioControlActive = false;
                 
-                audio.pause();
-                audio.playbackRate = 1.0;
+                // Stop audio playback
+                stopAudioPlayback();
                 updateAudioIndicator();
                 stopMusicParticles();
             }
@@ -1319,10 +1246,17 @@
                 
                 switch(e.key) {
                     case 'r': // Reset audio parameters
+                        targetRate = 1.0;
+                        targetVolume = 1.0;
                         currentPitch = 0;
-                        currentSpeed = 1.0;
-                        audio.playbackRate = 1.0;
-                        updateAudioIndicator();
+                        break;
+                    case ' ': // Space to pause/play
+                        e.preventDefault();
+                        if (isPlaying) {
+                            stopAudioPlayback();
+                        } else {
+                            startAudioPlayback();
+                        }
                         break;
                     case 'Escape': // Deactivate audio control
                         isAudioControlActive = false;
@@ -1340,7 +1274,7 @@
                         window.open('https://www.instagram.com/klub_zaproszenie/', '_blank');
                         break;
                     case 'about':
-                        alert('Natural audio control like a turntable:\n\n• Move cursor up/down to control playback rate and pitch together\n• Move cursor left/right for fine modulation\n• Center position = normal speed (1.0x)\n• Top = faster/higher pitch, Bottom = slower/lower pitch\n• Press R to reset, ESC to deactivate');
+                        alert('Seamless Audio Control:\n\n• Vertical mouse movement controls playback rate and pitch together\n• Horizontal movement controls volume\n• Center position = normal playback (1.0x)\n• Uses Web Audio API for smooth, artifact-free manipulation\n\nControls:\n• R - Reset parameters\n• Space - Pause/Play\n• ESC - Deactivate control');
                         break;
                 }
             }
