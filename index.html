@@ -17,162 +17,131 @@
             box-sizing: border-box;
         }
 
+        /* Banner Styles */
+        #banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 10000;
+            overflow: hidden;
+            transition: opacity 0.3s ease;
+        }
+
+        #banner.hiding {
+            pointer-events: none;
+        }
+
+        .banner-container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 5%;
+        }
+
+        .banner-left {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .banner-right {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .pledge-text {
+            font-family: 'Apple Garamond', serif;
+            font-size: 3rem;
+            color: #fff;
+            line-height: 1.4;
+            max-width: 80%;
+        }
+
+        #allowSoundContainer {
+            position: relative;
+            width: 400px;
+            height: 400px;
+            cursor: crosshair;
+        }
+
+        #allowSoundImg {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+
+        #drawingCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+        }
+
+        #armCursor {
+            position: fixed;
+            width: 100px;
+            height: 100px;
+            pointer-events: none;
+            z-index: 10001;
+            transform: translate(-50%, -50%);
+            transition: none;
+        }
+
+        /* Displacement map filter */
+        .wave-filter {
+            filter: url(#displacement);
+        }
+
+        /* Main page styles (unchanged) */
         html, body {
             cursor: url('cursor1.png') 16 16, auto;
             background: #000;
             overflow: hidden;
+        }
+
+        body {
             font-family: 'Apple Garamond', serif;
             min-height: 100vh;
             user-select: none;
         }
 
-        /* BANNER STYLES */
-        #banner {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: #000;
-            z-index: 10000;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 5vw;
-            transition: opacity 0.5s ease;
-        }
-
-        #banner.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        /* ARM TRACKING CURSOR */
-        #arm {
-            position: absolute;
-            width: 200px;
-            height: auto;
-            pointer-events: none;
-            transform-origin: center center;
-            transition: transform 0.1s ease-out;
-            z-index: 10001;
-        }
-
-        /* LEFT SIDE - DRAWING CANVAS */
-        .banner-left {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            position: relative;
-            justify-content: center;
-            width: 50%;
-        }
-
-        #allowsound {
-            width: 80vw;
-            max-width: 800px;
-            height: auto;
-            display: block;
-            animation: paperWave 6s ease-in-out infinite;
-            transform-origin: center center;
-        }
-
-        @keyframes paperWave {
-            0%, 100% { 
-                transform: perspective(1000px) rotateX(2deg) rotateY(-1deg);
-            }
-            25% { 
-                transform: perspective(1000px) rotateX(-1deg) rotateY(2deg);
-            }
-            50% { 
-                transform: perspective(1000px) rotateX(1deg) rotateY(-2deg);
-            }
-            75% { 
-                transform: perspective(1000px) rotateX(-2deg) rotateY(1deg);
-            }
-        }
-
-        /* Drawing Canvas */
-        #drawingCanvas {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            border: none;
-            cursor: crosshair;
-            z-index: 10002;
-        }
-
-        /* RIGHT SIDE - TEXT */
-        .banner-right {
-            color: #fff;
-            text-align: center;
-            font-size: 48px;
-            line-height: 1.4;
-            font-style: italic;
-        }
-
-        .klub-text {
-            font-size: 64px;
-            font-weight: bold;
-            margin-top: 20px;
-            letter-spacing: 2px;
-        }
-
-        /* CIRCLE TRANSITION */
-        .circle-transition {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            background: radial-gradient(circle, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 45%, rgba(0,0,0,1) 50%);
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 9999;
-            pointer-events: none;
-            transition: all 2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            opacity: 0;
-        }
-
-        .circle-transition.expanding {
-            width: 400vw;
-            height: 400vw;
-            opacity: 1;
-            background: radial-gradient(circle, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 30%, rgba(0,0,0,1) 35%);
-            animation: circleExpand 2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-        }
-
-        @keyframes circleExpand {
-            0% {
-                transform: translate(-50%, -50%) scale(0) rotate(0deg);
-                opacity: 0;
-            }
-            10% {
-                opacity: 1;
-            }
-            50% {
-                transform: translate(-50%, -50%) scale(0.5) rotate(180deg);
-            }
-            100% {
-                transform: translate(-50%, -50%) scale(1) rotate(360deg);
-                opacity: 1;
-            }
-        }
-
-        /* MAIN CONTENT - Initially hidden */
         #mainContent {
             opacity: 0;
-            pointer-events: none;
             transition: opacity 0.5s ease;
         }
 
         #mainContent.visible {
             opacity: 1;
-            pointer-events: auto;
         }
 
-        /* MAIN CONTENT STYLES (from original) */
+        /* Ellipse mask for transition */
+        .ellipse-mask {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        /* Duże losowe logo w tle: obniżone i półprzezroczyste */
         #bigLogoBg {
             position: fixed;
             top: 60%;
@@ -186,6 +155,7 @@
             z-index: 0;
         }
 
+        /* Animacja bujania książeczki */
         @keyframes sway {
             0%   { transform: rotate(0deg); }
             25%  { transform: rotate(2deg); }
@@ -358,77 +328,110 @@
             opacity: 1;
         }
 
-        /* RESPONSIVE */
         @media (max-width: 1200px) {
-            .banner-right {
-                font-size: 36px;
+            .pledge-text {
+                font-size: 2.5rem;
             }
-            .klub-text {
-                font-size: 48px;
+            #allowSoundContainer {
+                width: 350px;
+                height: 350px;
             }
-            #allowsound {
-                width: 70vw;
-                max-width: 500px;
+            .book {
+                width: 25vw;
+                height: 32.5vh;
+                min-width: 250px;
+                min-height: 325px;
             }
-            #arm {
-                width: 150px;
+            .btn {
+                font-size: 40px;
+            }
+            .particle {
+                font-size: 56px;
+            }
+            .soundcard-img {
+                max-width: 45%;
             }
         }
 
         @media (max-width: 800px) {
-            #banner {
+            .banner-container {
                 flex-direction: column;
-                padding: 5vh 5vw;
-                gap: 40px;
+                padding: 5% 2%;
             }
-            .banner-left {
-                width: 100%;
+            .pledge-text {
+                font-size: 2rem;
+                margin-bottom: 2rem;
             }
-            .banner-right {
-                font-size: 28px;
+            #allowSoundContainer {
+                width: 300px;
+                height: 300px;
             }
-            .klub-text {
-                font-size: 36px;
+            .book {
+                width: 35vw;
+                height: 35vh;
+                min-width: 200px;
+                min-height: 250px;
             }
-            #allowsound {
-                width: 80vw;
-                max-width: 400px;
+            .btn {
+                font-size: 32px;
+                gap: 30px;
             }
-            #arm {
-                width: 120px;
+            .particle {
+                font-size: 48px;
+            }
+            .soundcard-img {
+                max-width: 50%;
             }
         }
     </style>
 </head>
 <body>
-    <!-- BANNER -->
-    <div id="banner">
-        <!-- ARM FOLLOWING CURSOR -->
-        <img id="arm" src="arm.png" alt="Arm">
-        
-        <!-- LEFT SIDE - DRAWING AREA -->
-        <div class="banner-left">
-            <img id="allowsound" src="allowsound.png" alt="Allow Sound">
-            <canvas id="drawingCanvas"></canvas>
-        </div>
+    <!-- SVG Filters for displacement -->
+    <svg style="position: absolute; width: 0; height: 0;">
+        <defs>
+            <filter id="displacement">
+                <feTurbulence type="turbulence" baseFrequency="0.02" numOctaves="2" result="turbulence" seed="2">
+                    <animate attributeName="seed" from="1" to="10" dur="1s" repeatCount="indefinite"/>
+                </feTurbulence>
+                <feDisplacementMap in2="turbulence" in="SourceGraphic" scale="15" xChannelSelector="R" yChannelSelector="G"/>
+            </filter>
+        </defs>
+    </svg>
 
-        <!-- RIGHT SIDE -->
-        <div class="banner-right">
-            Sign the sound pledge<br>
-            by drawing on the image<br>
-            to join:<br>
-            <div class="klub-text">KLUB ZAPROSZENIE</div>
+    <!-- Interactive Banner -->
+    <div id="banner">
+        <div class="banner-container">
+            <div class="banner-left">
+                <div id="allowSoundContainer">
+                    <canvas id="drawingCanvas"></canvas>
+                    <img id="allowSoundImg" src="allowsound.png" alt="Allow Sound" class="wave-filter">
+                </div>
+            </div>
+            <div class="banner-right">
+                <p class="pledge-text">Sign the sound pledge to join:<br>KLUB ZAPROSZENIE</p>
+            </div>
         </div>
+        <img id="armCursor" src="arm.png" alt="Arm Cursor">
     </div>
 
-    <!-- CIRCLE TRANSITION -->
-    <div class="circle-transition" id="circleTransition"></div>
+    <!-- Ellipse mask for transition -->
+    <svg class="ellipse-mask" id="ellipseMask" style="display: none;">
+        <defs>
+            <mask id="ellipse-mask">
+                <rect width="100%" height="100%" fill="white"/>
+                <ellipse id="maskEllipse" cx="50%" cy="50%" rx="0" ry="0" fill="black"/>
+            </mask>
+        </defs>
+        <rect width="100%" height="100%" fill="black" mask="url(#ellipse-mask)"/>
+    </svg>
 
-    <!-- MAIN CONTENT -->
+    <!-- Main Content -->
     <div id="mainContent">
+        <!-- Duże, losowe logo w tle -->
         <img id="bigLogoBg" src="" alt="Duże Logo">
 
         <div class="book-container">
+            <!-- Napis 'swipe to open' wewnątrz książeczki, w prawym dolnym rogu okładki -->
             <div class="swipe-hint" id="swipeHint">swipe to open</div>
 
             <div class="book" id="book">
@@ -443,6 +446,7 @@
 
                 <div class="page page3" id="page3">
                     <div class="page-front">
+                        <!-- Dodatkowa treść drugiej strony, jeśli potrzeba -->
                     </div>
                 </div>
 
@@ -458,150 +462,82 @@
     </div>
 
     <script>
-        // BANNER VARIABLES
+        // Banner functionality
         const banner = document.getElementById('banner');
-        const arm = document.getElementById('arm');
-        const circleTransition = document.getElementById('circleTransition');
-        const mainContent = document.getElementById('mainContent');
-        const allowsoundImg = document.getElementById('allowsound');
+        const armCursor = document.getElementById('armCursor');
         const drawingCanvas = document.getElementById('drawingCanvas');
         const ctx = drawingCanvas.getContext('2d');
+        const allowSoundContainer = document.getElementById('allowSoundContainer');
+        const mainContent = document.getElementById('mainContent');
+        const ellipseMask = document.getElementById('ellipseMask');
+        const maskEllipse = document.getElementById('maskEllipse');
 
-        // Drawing variables
         let isDrawing = false;
-        let lastX = 0;
-        let lastY = 0;
-        let drawingProgress = 0;
-        const minDrawingThreshold = 0.05; // 5% of canvas area needs to be drawn
+        let hasDrawn = false;
+        let transitionStarted = false;
 
-        // ARM TRACKING
-        let mouseX = 0;
-        let mouseY = 0;
-        let armImg = new Image();
-        
-        armImg.onload = function() {
-            // Calculate anchor point (center of white pixels)
-            // For now, we'll assume the anchor is at the center of the image
-            // You can adjust this if needed
-        };
-        armImg.src = 'arm.png';
-
-        // Initialize drawing canvas
-        function initDrawingCanvas() {
-            const img = allowsoundImg;
-            const rect = img.getBoundingClientRect();
-            
+        // Set canvas size
+        function resizeDrawingCanvas() {
+            const rect = allowSoundContainer.getBoundingClientRect();
             drawingCanvas.width = rect.width;
             drawingCanvas.height = rect.height;
-            drawingCanvas.style.width = rect.width + 'px';
-            drawingCanvas.style.height = rect.height + 'px';
-            
-            // Set drawing style
-            ctx.lineWidth = 15;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-            ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
-            ctx.globalCompositeOperation = 'source-over';
         }
+        resizeDrawingCanvas();
+        window.addEventListener('resize', resizeDrawingCanvas);
 
-        // Wait for image to load, then initialize canvas
-        allowsoundImg.onload = function() {
-            initDrawingCanvas();
-        };
+        // Hide default cursor in banner
+        banner.style.cursor = 'none';
 
-        // If image is already loaded
-        if (allowsoundImg.complete) {
-            initDrawingCanvas();
-        }
-
-        // Resize canvas when window resizes
-        window.addEventListener('resize', () => {
-            setTimeout(initDrawingCanvas, 100);
-        });
-
+        // Track mouse movement for arm cursor
         document.addEventListener('mousemove', (e) => {
-            mouseX = e.clientX;
-            mouseY = e.clientY;
-            
-            if (!banner.classList.contains('hidden')) {
-                // Position arm so its center follows the cursor
-                arm.style.left = (mouseX - arm.offsetWidth / 2) + 'px';
-                arm.style.top = (mouseY - arm.offsetHeight / 2) + 'px';
-            }
-
-            // Handle drawing
-            if (isDrawing) {
-                draw(e);
+            if (!transitionStarted) {
+                armCursor.style.left = e.clientX + 'px';
+                armCursor.style.top = e.clientY + 'px';
             }
         });
 
-        // Drawing functions
+        // Drawing functionality
         function startDrawing(e) {
-            if (e.target !== drawingCanvas) return;
-            
-            isDrawing = true;
             const rect = drawingCanvas.getBoundingClientRect();
-            lastX = e.clientX - rect.left;
-            lastY = e.clientY - rect.top;
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
             
-            // Start a new path
-            ctx.beginPath();
-            ctx.moveTo(lastX, lastY);
+            if (x >= 0 && x <= rect.width && y >= 0 && y <= rect.height) {
+                isDrawing = true;
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+                ctx.lineWidth = 20;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+            }
         }
 
         function draw(e) {
             if (!isDrawing) return;
             
             const rect = drawingCanvas.getBoundingClientRect();
-            const currentX = e.clientX - rect.left;
-            const currentY = e.clientY - rect.top;
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
             
-            // Draw line
-            ctx.beginPath();
-            ctx.moveTo(lastX, lastY);
-            ctx.lineTo(currentX, currentY);
+            ctx.lineTo(x, y);
             ctx.stroke();
             
-            lastX = currentX;
-            lastY = currentY;
-            
-            // Update drawing progress
-            updateDrawingProgress();
+            if (!hasDrawn) {
+                hasDrawn = true;
+                setTimeout(startTransition, 500); // Start transition after a short delay
+            }
         }
 
         function stopDrawing() {
-            if (!isDrawing) return;
             isDrawing = false;
         }
 
-        function updateDrawingProgress() {
-            // Calculate how much of the canvas has been drawn on
-            const imageData = ctx.getImageData(0, 0, drawingCanvas.width, drawingCanvas.height);
-            const pixels = imageData.data;
-            let drawnPixels = 0;
-            
-            // Check every 4th pixel for performance (RGBA = 4 values per pixel)
-            for (let i = 3; i < pixels.length; i += 16) { // Check alpha channel every 4th pixel
-                if (pixels[i] > 0) { // If alpha > 0, pixel has been drawn on
-                    drawnPixels++;
-                }
-            }
-            
-            const totalPixels = (drawingCanvas.width * drawingCanvas.height) / 4; // Divided by 4 since we're checking every 4th
-            drawingProgress = drawnPixels / totalPixels;
-            
-            // Check if enough has been drawn
-            if (drawingProgress >= minDrawingThreshold) {
-                acceptSound();
-            }
-        }
-
-        // Event listeners for drawing
         drawingCanvas.addEventListener('mousedown', startDrawing);
         document.addEventListener('mousemove', draw);
         document.addEventListener('mouseup', stopDrawing);
 
-        // Touch events for mobile
+        // Touch support for drawing
         drawingCanvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
             const touch = e.touches[0];
@@ -628,42 +564,64 @@
             document.dispatchEvent(mouseEvent);
         });
 
-        // BANNER FUNCTIONS
-        function acceptSound() {
-            // Start circle transition from center of canvas
-            const canvasRect = drawingCanvas.getBoundingClientRect();
-            const centerX = canvasRect.left + canvasRect.width / 2;
-            const centerY = canvasRect.top + canvasRect.height / 2;
+        // Transition to main content
+        function startTransition() {
+            if (transitionStarted) return;
+            transitionStarted = true;
             
-            circleTransition.style.left = centerX + 'px';
-            circleTransition.style.top = centerY + 'px';
-            circleTransition.classList.add('expanding');
+            // Hide arm cursor
+            armCursor.style.display = 'none';
             
-            setTimeout(() => {
-                banner.classList.add('hidden');
-                mainContent.classList.add('visible');
-                initMainContent();
-            }, 1000);
+            // Start ellipse mask animation
+            ellipseMask.style.display = 'block';
             
-            setTimeout(() => {
-                circleTransition.style.display = 'none';
-            }, 2000);
+            let radius = 0;
+            const maxRadius = Math.max(window.innerWidth, window.innerHeight);
+            const animationDuration = 1500; // 1.5 seconds
+            const startTime = Date.now();
+            
+            function animateEllipse() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / animationDuration, 1);
+                
+                // Easing function for smooth animation
+                const easeProgress = 1 - Math.pow(1 - progress, 3);
+                radius = maxRadius * easeProgress;
+                
+                maskEllipse.setAttribute('rx', radius);
+                maskEllipse.setAttribute('ry', radius);
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animateEllipse);
+                } else {
+                    // Animation complete
+                    banner.style.display = 'none';
+                    ellipseMask.style.display = 'none';
+                    mainContent.classList.add('visible');
+                    initMainPage();
+                }
+            }
+            
+            requestAnimationFrame(animateEllipse);
         }
 
-        // MAIN CONTENT INITIALIZATION (from original code)
-        function initMainContent() {
-            // All the original JavaScript code goes here
+        // Initialize main page functionality
+        function initMainPage() {
+            // Lista plików z logo (te same, co na książeczce)
             const logoFiles = ['KZ1.png', 'KZ2.png', 'KZ3.png', 'KZ4.png', 'KZ5.png', 'KZ6.png'];
 
             let isDragging = false;
             let startX = 0;
             let currentRotation = 0;
             let isFlipped = false;
-            let particleInterval = null;
-            let extraParticleInterval = null;
+            let particleInterval;
+            let extraParticleInterval;
+            let permissionGranted = false;
             let hintTimeout;
-            let isAudioPlaying = false;
 
+            // Zmienne do śledzenia ruchu kursora
+            let mouseX = 0;
+            let mouseY = 0;
             let lastMouseX = 0;
             let lastMouseY = 0;
             let mouseSpeed = 0;
@@ -682,9 +640,11 @@
             const bigLogoBg = document.getElementById('bigLogoBg');
             const speakerImg = document.getElementById('speakerImg');
 
+            // Offscreen canvas do pobierania pikseli tła
             const offCanvas = document.createElement('canvas');
             const offCtx = offCanvas.getContext('2d');
 
+            // Śledzenie ruchu myszy
             document.addEventListener('mousemove', (e) => {
                 lastMouseX = mouseX;
                 lastMouseY = mouseY;
@@ -694,7 +654,7 @@
                 const now = Date.now();
                 const timeDelta = now - lastMouseUpdate;
                 
-                if (timeDelta > 16) {
+                if (timeDelta > 16) { // ~60fps
                     const distance = Math.sqrt(
                         Math.pow(mouseX - lastMouseX, 2) + 
                         Math.pow(mouseY - lastMouseY, 2)
@@ -838,31 +798,30 @@
             }
 
             function startMusicParticles() {
-                // Zatrzymaj poprzednie instancje
                 stopMusicParticles();
                 
-                // Sprawdź czy już działają
-                if (particleInterval !== null) return;
-                
                 particleInterval = setInterval(() => {
-                    if (isFlipped) { // Dodatkowe sprawdzenie
+                    createMusicParticle();
+                }, 120);
+                
+                extraParticleInterval = setInterval(() => {
+                    if (Math.random() > 0.3) {
                         createMusicParticle();
                     }
-                }, 500); // Jeszcze rzadziej - 500ms
+                }, 80);
             }
 
             function stopMusicParticles() {
-                if (particleInterval !== null) {
+                if (particleInterval) {
                     clearInterval(particleInterval);
                     particleInterval = null;
                 }
                 
-                if (extraParticleInterval !== null) {
+                if (extraParticleInterval) {
                     clearInterval(extraParticleInterval);
                     extraParticleInterval = null;
                 }
                 
-                // Usuń wszystkie istniejące nutki
                 const existingParticles = musicParticles.querySelectorAll('.particle');
                 existingParticles.forEach(particle => {
                     if (particle.parentNode) {
@@ -872,8 +831,15 @@
             }
 
             book.addEventListener('click', () => {
-                console.log('Kliknięto książkę - isFlipped:', isFlipped);
-            });
+                if (!permissionGranted) {
+                    audio.play().then(() => {
+                        audio.pause();
+                        permissionGranted = true;
+                    }).catch(() => {
+                        console.log('Audio autoplay blocked');
+                    });
+                }
+            }, { once: true });
 
             function showSwipeHint() {
                 if (!isFlipped) {
@@ -943,136 +909,4 @@
                 
                 const clientX = (e.type === 'touchmove') ? e.touches[0].clientX : e.clientX;
                 const deltaX = clientX - startX;
-                const sensitivity = 0.8;
-                let rotation;
-                
-                if (isFlipped) {
-                    rotation = Math.max(-180, Math.min(0, -180 + deltaX * sensitivity));
-                } else {
-                    rotation = Math.max(-180, Math.min(0, deltaX * sensitivity));
-                }
-                
-                page1.style.transform = `rotateY(${rotation}deg)`;
-            }
-
-            function endDrag(e) {
-                if (!isDragging) return;
-                
-                isDragging = false;
-                page1.classList.remove('dragging');
-                page1.style.transition = 'transform 0.8s ease-out';
-                
-                const clientX = (e.type === 'touchend' && e.changedTouches) ? e.changedTouches[0].clientX : e.clientX;
-                const deltaX = clientX - startX;
-                const threshold = 60;
-                
-                if (deltaX < -threshold && !isFlipped) {
-                    flipPage();
-                } else if (deltaX > threshold && isFlipped) {
-                    unflipPage();
-                } else {
-                    resetPage();
-                }
-                
-                document.removeEventListener('mousemove', drag);
-                document.removeEventListener('mouseup', endDrag);
-                document.removeEventListener('touchmove', handleTouchMove);
-                document.removeEventListener('touchend', handleTouchEnd);
-            }
-
-            function handleTouchStart(e) {
-                e.preventDefault();
-                startDrag(e);
-            }
-
-            function handleTouchMove(e) {
-                e.preventDefault();
-                drag(e);
-            }
-
-            function handleTouchEnd(e) {
-                e.preventDefault();
-                endDrag(e);
-            }
-
-            function flipPage() {
-                // Zabezpieczenie przed wielokrotnym wywołaniem
-                if (isFlipped) return;
-                
-                isFlipped = true;
-                currentRotation = -180;
-                page1.classList.add('flipped');
-                page1.style.transform = 'rotateY(-180deg)';
-                page1.style.zIndex = '1';
-                
-                hideSwipeHint();
-                clearTimeout(hintTimeout);
-                
-                // Zatrzymaj poprzednią muzykę i cząsteczki
-                audio.pause();
-                audio.currentTime = 0;
-                stopMusicParticles();
-                
-                // Ustaw flagę i uruchom nową instancję
-                isAudioPlaying = true;
-                audio.playbackRate = 1.0;
-                audio.play().then(() => {
-                    console.log('Audio started successfully');
-                }).catch(e => {
-                    console.log('Nie można odtworzyć audio:', e);
-                    isAudioPlaying = false;
-                });
-                
-                // Uruchom cząsteczki po krótkim opóźnieniu
-                setTimeout(() => {
-                    if (isFlipped) {
-                        startMusicParticles();
-                    }
-                }, 100);
-            }
-
-            function unflipPage() {
-                // Zabezpieczenie przed wielokrotnym wywołaniem
-                if (!isFlipped) return;
-                
-                isFlipped = false;
-                currentRotation = 0;
-                page1.classList.remove('flipped');
-                page1.style.transform = 'rotateY(0deg)';
-                page1.style.zIndex = '3';
-                
-                resetHintTimer();
-                
-                // Zatrzymaj wszystko
-                isAudioPlaying = false;
-                audio.pause();
-                audio.playbackRate = 1.0;
-                stopMusicParticles();
-            }
-
-            function resetPage() {
-                const targetRotation = isFlipped ? -180 : 0;
-                page1.style.transition = 'transform 0.6s ease-out';
-                page1.style.transform = `rotateY(${targetRotation}deg)`;
-                setTimeout(() => {
-                    page1.style.transition = '';
-                }, 600);
-            }
-
-            window.handleButtonClick = function(action) {
-                switch(action) {
-                    case 'archive':
-                        alert('Otwieranie archiwum...');
-                        break;
-                    case 'info':
-                        alert('Wyświetlanie informacji...');
-                        break;
-                    case 'about':
-                        alert('O aplikacji...');
-                        break;
-                }
-            }
-        }
-    </script>
-</body>
-</html>
+                const sensitivity = 0.
