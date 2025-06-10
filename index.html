@@ -422,16 +422,16 @@
     <!-- Audio Control Indicator -->
     <div class="audio-control-indicator" id="audioIndicator">
         <div class="control-row">
+            <span>Rate:</span>
+            <span class="control-value" id="speedValue">1.00x</span>
+        </div>
+        <div class="control-row">
             <span>Pitch:</span>
             <span class="control-value" id="pitchValue">0 cents</span>
         </div>
         <div class="control-row">
-            <span>Speed:</span>
-            <span class="control-value" id="speedValue">1.00x</span>
-        </div>
-        <div class="control-row">
-            <span>Time Stretch:</span>
-            <span class="control-value" id="stretchValue">OFF</span>
+            <span>Mode:</span>
+            <span class="control-value" id="stretchValue">NATURAL</span>
         </div>
     </div>
 
@@ -806,23 +806,33 @@
                 const screenWidth = window.innerWidth;
                 const screenHeight = window.innerHeight;
                 
-                // X-axis controls pitch (-1200 to +1200 cents)
-                const pitchNormalized = (mouseX / screenWidth) * 2 - 1; // -1 to 1
-                currentPitch = pitchNormalized * 1200; // Convert to cents
+                // Calculate distance from center for natural control
+                const centerX = screenWidth / 2;
+                const centerY = screenHeight / 2;
+                const deltaX = mouseX - centerX;
+                const deltaY = mouseY - centerY;
                 
-                // Y-axis controls speed (0.25x to 4x)
-                const speedNormalized = 1 - (mouseY / screenHeight); // 1 at top, 0 at bottom
-                currentSpeed = 0.25 + (speedNormalized * 3.75); // 0.25 to 4.0
+                // Use Y-axis primarily for speed/pitch control (like a turntable)
+                const verticalInfluence = (centerY - mouseY) / centerY; // -1 to 1 (bottom to top)
                 
-                // Enable time-stretch for extreme speed changes
-                isTimeStretchEnabled = Math.abs(currentSpeed - 1.0) > 0.1;
+                // Use X-axis for fine-tuning and modulation
+                const horizontalInfluence = deltaX / centerX; // -1 to 1 (left to right)
                 
-                // Update native audio playback rate for simple speed changes
-                if (!isTimeStretchEnabled) {
-                    audio.playbackRate = currentSpeed;
-                } else {
-                    audio.playbackRate = 1.0; // Let our processor handle it
-                }
+                // Base speed/pitch from Y position (turntable style)
+                const baseRate = 0.25 + (verticalInfluence + 1) * 1.875; // 0.25x to 4x
+                
+                // Add subtle horizontal modulation (±10% variation)
+                const modulation = horizontalInfluence * 0.1;
+                currentSpeed = Math.max(0.1, Math.min(4.0, baseRate + (baseRate * modulation)));
+                
+                // Natural pitch follows speed (like analog tape/vinyl)
+                currentPitch = (currentSpeed - 1.0) * 1200; // Convert speed ratio to cents
+                
+                // Use simple playback rate for natural sound
+                audio.playbackRate = currentSpeed;
+                
+                // Disable complex time-stretching for more natural feel
+                isTimeStretchEnabled = false;
                 
                 // Update UI
                 updateAudioIndicator();
@@ -831,9 +841,12 @@
             // Update the audio control indicator
             function updateAudioIndicator() {
                 if (isAudioControlActive) {
+                    const speedPercent = Math.round((currentSpeed - 1.0) * 100);
+                    const speedSign = speedPercent >= 0 ? '+' : '';
+                    
                     pitchValue.textContent = `${Math.round(currentPitch)} cents`;
-                    speedValue.textContent = `${currentSpeed.toFixed(2)}x`;
-                    stretchValue.textContent = isTimeStretchEnabled ? 'ON' : 'OFF';
+                    speedValue.textContent = `${currentSpeed.toFixed(2)}x (${speedSign}${speedPercent}%)`;
+                    stretchValue.textContent = 'NATURAL';
                     
                     audioIndicator.classList.add('active');
                 } else {
@@ -959,54 +972,53 @@
                 const deltaX = targetX - startX;
                 const deltaY = targetY - startY;
                 
-                // Particle behavior influenced by pitch and speed
-                const pitchInfluence = Math.abs(currentPitch) / 1200; // 0 to 1
-                const speedInfluence = Math.abs(currentSpeed - 1.0) / 3.0; // 0 to 1
+                // Particle behavior influenced by playback rate (more natural)
+                const rateVariation = Math.abs(currentSpeed - 1.0); // 0 to 3
+                const intensity = Math.min(1.0, rateVariation);
                 
-                // More chaotic movement with higher pitch/speed changes
-                const chaos = (pitchInfluence + speedInfluence) * 0.5;
-                const spiralRadius = 20 + chaos * 40;
-                const rotations = 1 + chaos * 2;
+                // More organic movement based on single rate parameter
+                const spiralRadius = 15 + intensity * 30;
+                const rotations = 0.5 + intensity * 1.5;
                 
-                // Speed affects particle duration
-                const baseDuration = 1500;
-                const duration = baseDuration / Math.max(0.5, currentSpeed * 0.5);
+                // Speed affects particle duration and movement
+                const baseDuration = 1800;
+                const duration = baseDuration / Math.max(0.3, currentSpeed * 0.7);
                 
                 const keyframes = [];
-                const steps = 40;
+                const steps = 30;
                 
                 for (let i = 0; i <= steps; i++) {
                     const progress = i / steps;
                     const easeProgress = 1 - Math.pow(1 - progress, 2);
                     
-                    // Spiral influenced by audio parameters
+                    // Organic spiral movement
                     const angle = rotations * 2 * Math.PI * progress;
-                    const currentRadius = spiralRadius * (1 - progress * 0.7);
+                    const currentRadius = spiralRadius * (1 - progress * 0.8);
                     
-                    // Pitch affects spiral direction
-                    const pitchDirection = currentPitch > 0 ? 1 : -1;
-                    const spiralX = Math.cos(angle * pitchDirection) * currentRadius;
-                    const spiralY = Math.sin(angle * pitchDirection) * currentRadius;
+                    // Direction influenced by speed (faster = more energetic)
+                    const direction = currentSpeed > 1.0 ? 1 : -1;
+                    const spiralX = Math.cos(angle * direction) * currentRadius;
+                    const spiralY = Math.sin(angle * direction) * currentRadius;
                     
                     const mainX = deltaX * easeProgress;
                     const mainY = deltaY * easeProgress;
                     
-                    // Speed affects rotation
-                    const rotation = angle * 180 / Math.PI * currentSpeed;
+                    // Rotation speed matches audio rate
+                    const rotation = angle * 180 / Math.PI * Math.max(0.5, currentSpeed);
                     
-                    // Scale influenced by audio intensity
-                    const scale = 1 + chaos * 0.5 * Math.sin(progress * Math.PI * 4);
+                    // Scale pulses with intensity
+                    const scalePulse = 1 + intensity * 0.3 * Math.sin(progress * Math.PI * 6);
                     
                     keyframes.push({
-                        transform: `translate(${mainX + spiralX}px, ${mainY + spiralY}px) rotate(${rotation}deg) scale(${scale})`,
-                        opacity: Math.max(0.3, 1 - progress * 0.7),
+                        transform: `translate(${mainX + spiralX}px, ${mainY + spiralY}px) rotate(${rotation}deg) scale(${scalePulse})`,
+                        opacity: Math.max(0.4, 1 - progress * 0.6),
                         offset: progress
                     });
                 }
                 
                 particle.animate(keyframes, {
                     duration: duration,
-                    easing: 'linear'
+                    easing: 'ease-out'
                 });
                 
                 setTimeout(() => {
@@ -1019,20 +1031,22 @@
             function startMusicParticles() {
                 stopMusicParticles();
                 
-                // Particle frequency influenced by speed
-                const baseInterval = 150;
-                const speedFactor = Math.max(0.3, Math.min(3.0, currentSpeed));
-                const interval = baseInterval / speedFactor;
+                // Simpler particle frequency based on playback rate
+                const baseInterval = 180;
+                const rateMultiplier = Math.max(0.2, Math.min(2.5, currentSpeed));
+                const interval = baseInterval / rateMultiplier;
                 
                 particleInterval = setInterval(() => {
                     createMusicParticle();
                 }, interval);
                 
                 extraParticleInterval = setInterval(() => {
-                    if (Math.random() > 0.4) {
+                    // More particles when rate is extreme
+                    const intensity = Math.abs(currentSpeed - 1.0);
+                    if (Math.random() > Math.max(0.3, 0.8 - intensity)) {
                         createMusicParticle();
                     }
-                }, interval * 0.6);
+                }, interval * 0.7);
             }
 
             function stopMusicParticles() {
@@ -1307,12 +1321,7 @@
                     case 'r': // Reset audio parameters
                         currentPitch = 0;
                         currentSpeed = 1.0;
-                        isTimeStretchEnabled = false;
                         audio.playbackRate = 1.0;
-                        updateAudioIndicator();
-                        break;
-                    case 't': // Toggle time stretch
-                        isTimeStretchEnabled = !isTimeStretchEnabled;
                         updateAudioIndicator();
                         break;
                     case 'Escape': // Deactivate audio control
@@ -1331,7 +1340,7 @@
                         window.open('https://www.instagram.com/klub_zaproszenie/', '_blank');
                         break;
                     case 'about':
-                        alert('Advanced audio manipulation:\n\n• Move cursor horizontally to control pitch (-1200 to +1200 cents)\n• Move cursor vertically to control speed (0.25x to 4x)\n• Time-stretch algorithm preserves pitch during extreme speed changes\n• Press R to reset, T to toggle time-stretch, ESC to deactivate');
+                        alert('Natural audio control like a turntable:\n\n• Move cursor up/down to control playback rate and pitch together\n• Move cursor left/right for fine modulation\n• Center position = normal speed (1.0x)\n• Top = faster/higher pitch, Bottom = slower/lower pitch\n• Press R to reset, ESC to deactivate');
                         break;
                 }
             }
