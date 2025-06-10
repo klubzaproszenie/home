@@ -127,71 +127,7 @@
             opacity: 1;
         }
 
-        /* Audio control indicator */
-        .audio-control-indicator {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 10px;
-            padding: 15px;
-            font-family: 'Apple Garamond', serif;
-            color: white;
-            z-index: 1000;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            pointer-events: none;
-        }
-
-        .audio-control-indicator.active {
-            opacity: 1;
-        }
-
-        .control-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 5px;
-            min-width: 200px;
-        }
-
-        .control-value {
-            font-weight: bold;
-        }
-
-        /* Visual cursor crosshair */
-        .cursor-crosshair {
-            position: fixed;
-            pointer-events: none;
-            z-index: 999;
-            opacity: 0;
-            transition: opacity 0.2s ease;
-        }
-
-        .cursor-crosshair.active {
-            opacity: 0.6;
-        }
-
-        .crosshair-line {
-            position: absolute;
-            background: rgba(255, 255, 255, 0.8);
-        }
-
-        .crosshair-h {
-            width: 100vw;
-            height: 1px;
-            left: -50vw;
-            top: 0;
-        }
-
-        .crosshair-v {
-            width: 1px;
-            height: 100vh;
-            left: 0;
-            top: -50vh;
-        }
-
-        /* Duże losowe logo w tle */
+        /* Duże losowe logo w tle: obniżone i półprzezroczyste */
         #bigLogoBg {
             position: fixed;
             top: 60%;
@@ -203,6 +139,12 @@
             transform-origin: center center;
             opacity: 0.5;
             z-index: 0;
+            filter: blur(0px);
+            transition: filter 0.3s ease;
+        }
+
+        #bigLogoBg.distorted {
+            filter: blur(2px) hue-rotate(30deg) saturate(1.5);
         }
 
         /* Animacja bujania książeczki */
@@ -212,6 +154,11 @@
             50%  { transform: rotate(0deg); }
             75%  { transform: rotate(-2deg); }
             100% { transform: rotate(0deg); }
+        }
+
+        @keyframes spinVinyl {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
 
         .book-container {
@@ -284,6 +231,98 @@
         .page-back {
             transform: rotateY(180deg);
             position: relative;
+        }
+
+        .turntable-controls {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .vinyl-container {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            margin: 10px 0;
+        }
+
+        .vinyl-record {
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, #1a1a1a 30%, #333 31%, #333 45%, #1a1a1a 46%);
+            border-radius: 50%;
+            position: relative;
+            transition: transform 0.1s ease;
+        }
+
+        .vinyl-record.spinning {
+            animation: spinVinyl linear infinite;
+        }
+
+        .vinyl-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 15px;
+            height: 15px;
+            background: #ff0000;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .vinyl-needle {
+            position: absolute;
+            top: 20%;
+            right: -5px;
+            width: 40px;
+            height: 2px;
+            background: #silver;
+            transform-origin: right center;
+            transform: rotate(-25deg);
+            border-radius: 1px;
+            transition: transform 0.3s ease;
+        }
+
+        .vinyl-needle.active {
+            transform: rotate(-35deg);
+        }
+
+        .control-slider {
+            width: 80px;
+            height: 4px;
+            background: #666;
+            border-radius: 2px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .slider-thumb {
+            position: absolute;
+            top: -4px;
+            width: 12px;
+            height: 12px;
+            background: #fff;
+            border-radius: 50%;
+            cursor: grab;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .slider-thumb:active {
+            cursor: grabbing;
+        }
+
+        .control-labels {
+            display: flex;
+            justify-content: space-between;
+            width: 80px;
+            font-size: 8px;
+            color: #666;
+            margin-top: 2px;
         }
 
         .soundcard-img {
@@ -377,6 +416,55 @@
             opacity: 1;
         }
 
+        /* Synthesizer Controls */
+        .synth-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background: rgba(0,0,0,0.8);
+            padding: 20px;
+            border-radius: 10px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 1000;
+        }
+
+        .synth-controls.visible {
+            opacity: 1;
+        }
+
+        .synth-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: white;
+            font-size: 14px;
+        }
+
+        .synth-knob {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #333, #666);
+            position: relative;
+            cursor: pointer;
+        }
+
+        .synth-knob-indicator {
+            position: absolute;
+            top: 2px;
+            left: 50%;
+            width: 2px;
+            height: 15px;
+            background: #fff;
+            transform: translate(-50%, 0) rotate(var(--rotation, 0deg));
+            transform-origin: center bottom;
+            border-radius: 1px;
+        }
+
         @media (max-width: 1200px) {
             .pledge-text {
                 font-size: 2.5rem;
@@ -451,34 +539,41 @@
         <img id="armCursor" src="arm.png" alt="Arm Cursor">
     </div>
 
-    <!-- Audio Control Indicator -->
-    <div class="audio-control-indicator" id="audioIndicator">
-        <div class="control-row">
-            <span>Rate:</span>
-            <span class="control-value" id="rateValue">1.00x</span>
-        </div>
-        <div class="control-row">
-            <span>Pitch:</span>
-            <span class="control-value" id="pitchValue">0 cents</span>
-        </div>
-        <div class="control-row">
-            <span>Volume:</span>
-            <span class="control-value" id="volumeValue">100%</span>
-        </div>
-    </div>
-
-    <!-- Cursor Crosshair -->
-    <div class="cursor-crosshair" id="cursorCrosshair">
-        <div class="crosshair-line crosshair-h"></div>
-        <div class="crosshair-line crosshair-v"></div>
-    </div>
-
     <!-- Main Content -->
     <div id="mainContent">
         <!-- Duże, losowe logo w tle -->
         <img id="bigLogoBg" src="" alt="Duże Logo">
 
+        <!-- Synthesizer Controls -->
+        <div class="synth-controls" id="synthControls">
+            <div class="synth-control">
+                <span>Filter</span>
+                <div class="synth-knob" data-param="filter">
+                    <div class="synth-knob-indicator"></div>
+                </div>
+            </div>
+            <div class="synth-control">
+                <span>Reverb</span>
+                <div class="synth-knob" data-param="reverb">
+                    <div class="synth-knob-indicator"></div>
+                </div>
+            </div>
+            <div class="synth-control">
+                <span>Delay</span>
+                <div class="synth-knob" data-param="delay">
+                    <div class="synth-knob-indicator"></div>
+                </div>
+            </div>
+            <div class="synth-control">
+                <span>Distortion</span>
+                <div class="synth-knob" data-param="distortion">
+                    <div class="synth-knob-indicator"></div>
+                </div>
+            </div>
+        </div>
+
         <div class="book-container">
+            <!-- Napis 'swipe to open' wewnątrz książeczki, w prawym dolnym rogu okładki -->
             <div class="swipe-hint" id="swipeHint">swipe to open</div>
 
             <div class="book" id="book">
@@ -487,12 +582,37 @@
                         <img src="" alt="Logo" class="page1-logo" id="randomLogo">
                     </div>
                     <div class="page-back" id="page1Back">
-                        <img src="speaker.png" alt="Speaker" class="soundcard-img" id="speakerImg">
+                        <div class="turntable-controls">
+                            <div class="vinyl-container">
+                                <div class="vinyl-record" id="vinylRecord">
+                                    <div class="vinyl-center"></div>
+                                </div>
+                                <div class="vinyl-needle" id="vinylNeedle"></div>
+                            </div>
+                            
+                            <div class="control-slider" id="speedSlider">
+                                <div class="slider-thumb" id="speedThumb"></div>
+                            </div>
+                            <div class="control-labels">
+                                <span>0.5x</span>
+                                <span>2x</span>
+                            </div>
+                            
+                            <div class="control-slider" id="pitchSlider">
+                                <div class="slider-thumb" id="pitchThumb"></div>
+                            </div>
+                            <div class="control-labels">
+                                <span>-12</span>
+                                <span>+12</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <div class="page page3" id="page3">
-                    <div class="page-front"></div>
+                    <div class="page-front">
+                        <!-- Dodatkowa treść drugiej strony, jeśli potrzeba -->
+                    </div>
                 </div>
 
                 <div class="buttons-container" id="buttonsContainer">
@@ -555,7 +675,9 @@
                 ctx.lineCap = 'round';
                 ctx.lineJoin = 'round';
                 
+                // Unlock audio on drawing (especially important for mobile)
                 if (!audioPermissionGranted) {
+                    // Create a silent audio to unlock permissions
                     const silentAudio = new Audio();
                     silentAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQQAAAAAAAAAAAEA';
                     silentAudio.play().then(() => {
@@ -583,7 +705,7 @@
             
             if (!hasDrawn) {
                 hasDrawn = true;
-                setTimeout(startTransition, 500);
+                setTimeout(startTransition, 500); // Start transition after a short delay
             }
         }
 
@@ -627,7 +749,10 @@
             if (transitionStarted) return;
             transitionStarted = true;
             
+            // Hide arm cursor
             armCursor.style.display = 'none';
+            
+            // Simple fade transition
             banner.style.transition = 'opacity 1s ease-out';
             banner.style.opacity = '0';
             
@@ -640,6 +765,7 @@
 
         // Initialize main page functionality
         function initMainPage() {
+            // Lista plików z logo
             const logoFiles = ['KZ1.png', 'KZ2.png', 'KZ3.png', 'KZ4.png', 'KZ5.png', 'KZ6.png'];
 
             let isDragging = false;
@@ -651,206 +777,240 @@
             let permissionGranted = audioPermissionGranted;
             let hintTimeout;
 
-            // Audio manipulation variables
+            // Improved audio variables for smoother playback
+            let audioContext;
+            let source;
+            let gainNode;
+            let analyser;
+            let filterNode;
+            let reverbNode;
+            let delayNode;
+            let distortionNode;
+            let convolver;
+            let feedbackGain;
+            let delayGain;
+            
+            // Enhanced smooth control system
+            let synthParams = {
+                speed: 1.0,
+                pitch: 0,
+                filter: 0.5,
+                reverb: 0,
+                delay: 0,
+                distortion: 0
+            };
+
+            // Improved smoothing with separate systems for different parameters
+            let targetSpeed = 1.0;
+            let currentSpeed = 1.0;
+            let targetPitch = 0;
+            let currentPitch = 0;
+            
+            // Different smoothing factors for different aspects
+            const speedSmoothingFactor = 0.08;     // Faster response for speed
+            const effectSmoothingFactor = 0.05;    // Medium response for effects
+            const scratchSmoothingFactor = 0.15;   // Quick response for scratching
+            
+            // Enhanced mouse tracking with better debouncing
             let mouseX = 0;
             let mouseY = 0;
-            let isAudioControlActive = false;
+            let lastMouseX = 0;
+            let lastMouseY = 0;
+            let mouseSpeed = 0;
+            let smoothedMouseSpeed = 0;
+            let speedHistory = [];
+            let lastMouseUpdate = Date.now();
+            let vinylRotation = 0;
+            let scratchIntensity = 0;
+            let targetScratchIntensity = 0;
 
-            // Web Audio API setup for seamless playback
-            let audioContext;
-            let audioBuffer = null;
-            let currentSource = null;
-            let gainNode = null;
-            let filterNode = null;
-            let analyserNode = null;
+            const audio = new Audio('muza.mp3');
+            audio.loop = true;
+            audio.crossOrigin = 'anonymous';
+            audio.preload = 'auto'; // Better preloading
             
-            // Playback control variables
-            let startTime = 0;
-            let pauseTime = 0;
-            let isPlaying = false;
-            let currentRate = 1.0;
-            let currentPitch = 0;
-            let currentVolume = 1.0;
-
-            // Smooth parameter interpolation
-            let targetRate = 1.0;
-            let targetVolume = 1.0;
-            const SMOOTHING_FACTOR = 0.92; // Higher = smoother but slower response
-
-            // UI elements
-            const audioIndicator = document.getElementById('audioIndicator');
-            const rateValue = document.getElementById('rateValue');
-            const pitchValue = document.getElementById('pitchValue');
-            const volumeValue = document.getElementById('volumeValue');
-            const cursorCrosshair = document.getElementById('cursorCrosshair');
-
-            // Initialize Web Audio API
-            async function initAudio() {
+            // Initialize Web Audio API with improved stability
+            function initAudioContext() {
                 try {
                     audioContext = new (window.AudioContext || window.webkitAudioContext)();
                     
-                    // Create audio nodes
+                    // Create main audio nodes
+                    source = audioContext.createMediaElementSource(audio);
                     gainNode = audioContext.createGain();
+                    analyser = audioContext.createAnalyser();
+                    
+                    // Create filter with better settings
                     filterNode = audioContext.createBiquadFilter();
-                    analyserNode = audioContext.createAnalyser();
-                    
-                    // Configure filter for smooth frequency response
                     filterNode.type = 'lowpass';
-                    filterNode.frequency.value = 22050;
-                    filterNode.Q.value = 0.7;
+                    filterNode.frequency.value = 20000;
+                    filterNode.Q.value = 0.7; // Reduced Q for smoother filtering
                     
-                    // Connect audio graph
-                    gainNode.connect(filterNode);
-                    filterNode.connect(analyserNode);
-                    analyserNode.connect(audioContext.destination);
+                    // Create reverb
+                    convolver = audioContext.createConvolver();
+                    reverbNode = audioContext.createGain();
                     
-                    // Load audio file
-                    await loadAudioFile('muza.mp3');
+                    // Create delay with better settings
+                    delayNode = audioContext.createDelay(2.0); // Increased max delay
+                    delayGain = audioContext.createGain();
+                    feedbackGain = audioContext.createGain();
                     
-                    console.log('Web Audio API initialized successfully');
-                    return true;
-                } catch (error) {
-                    console.error('Failed to initialize Web Audio API:', error);
-                    return false;
+                    // Create distortion
+                    distortionNode = audioContext.createWaveShaper();
+                    distortionNode.oversample = '4x'; // Better quality distortion
+                    
+                    // Connect audio graph with better routing
+                    source.connect(filterNode);
+                    filterNode.connect(distortionNode);
+                    distortionNode.connect(delayNode);
+                    delayNode.connect(feedbackGain);
+                    feedbackGain.connect(delayNode);
+                    delayNode.connect(delayGain);
+                    distortionNode.connect(gainNode);
+                    delayGain.connect(gainNode);
+                    gainNode.connect(convolver);
+                    convolver.connect(reverbNode);
+                    gainNode.connect(analyser);
+                    reverbNode.connect(analyser);
+                    analyser.connect(audioContext.destination);
+                    
+                    // Set improved initial values
+                    gainNode.gain.value = 1.0;
+                    delayNode.delayTime.value = 0.25;
+                    delayGain.gain.value = 0.001; // Very low initial value
+                    feedbackGain.gain.value = 0.2; // Reduced feedback for stability
+                    reverbNode.gain.value = 0.001; // Very low initial value
+                    
+                    // Create impulse response for reverb
+                    createImpulseResponse();
+                    
+                    console.log('Enhanced audio context initialized');
+                } catch (e) {
+                    console.log('Web Audio API not supported:', e);
                 }
             }
-
-            // Load audio file into buffer
-            async function loadAudioFile(url) {
-                try {
-                    const response = await fetch(url);
-                    const arrayBuffer = await response.arrayBuffer();
-                    audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-                    console.log('Audio file loaded successfully');
-                } catch (error) {
-                    console.error('Failed to load audio file:', error);
-                    throw error;
-                }
-            }
-
-            // Create and start audio source with pitch shifting
-            function startAudioPlayback() {
-                if (!audioBuffer || !audioContext) return;
-
-                // Stop current source if playing
-                stopAudioPlayback();
-
-                // Create new buffer source
-                currentSource = audioContext.createBufferSource();
-                currentSource.buffer = audioBuffer;
-                currentSource.loop = true;
+            
+            // Create reverb impulse response
+            function createImpulseResponse() {
+                const length = audioContext.sampleRate * 3; // Longer reverb
+                const impulse = audioContext.createBuffer(2, length, audioContext.sampleRate);
                 
-                // Connect to gain node
-                currentSource.connect(gainNode);
-                
-                // Calculate playback position
-                const currentTime = audioContext.currentTime;
-                const offset = pauseTime % audioBuffer.duration;
-                
-                // Start playback
-                currentSource.start(currentTime, offset);
-                startTime = currentTime - offset / currentRate;
-                isPlaying = true;
-                
-                console.log('Audio playback started');
-            }
-
-            // Stop current audio source
-            function stopAudioPlayback() {
-                if (currentSource) {
-                    try {
-                        currentSource.stop();
-                        currentSource.disconnect();
-                    } catch (e) {
-                        // Source already stopped
-                    }
-                    currentSource = null;
-                }
-                isPlaying = false;
-            }
-
-            // Update audio parameters with smooth interpolation
-            function updateAudioParameters() {
-                if (!isFlipped || !audioContext || !gainNode) return;
-
-                const screenWidth = window.innerWidth;
-                const screenHeight = window.innerHeight;
-                const centerX = screenWidth / 2;
-                const centerY = screenHeight / 2;
-
-                // Calculate normalized positions (-1 to 1)
-                const normalizedX = (mouseX - centerX) / centerX;
-                const normalizedY = (centerY - mouseY) / centerY;
-
-                // Y-axis controls rate (0.25x to 2.5x) with exponential curve for better feel
-                const rateRange = Math.pow(2, normalizedY * 1.32); // ±1.32 octaves
-                targetRate = Math.max(0.25, Math.min(2.5, rateRange));
-
-                // X-axis controls volume with smooth curve
-                targetVolume = Math.max(0.1, Math.min(1.0, 0.7 + normalizedX * 0.3));
-
-                // Calculate pitch change in cents (for display)
-                currentPitch = Math.log2(targetRate) * 1200;
-
-                // Smooth interpolation for rate changes
-                const rateDiff = targetRate - currentRate;
-                if (Math.abs(rateDiff) > 0.001) {
-                    const newRate = currentRate + rateDiff * (1 - SMOOTHING_FACTOR);
-                    
-                    // Apply rate change by restarting source with new rate
-                    if (isPlaying && Math.abs(newRate - currentRate) > 0.01) {
-                        const elapsed = (audioContext.currentTime - startTime) * currentRate;
-                        pauseTime = elapsed % audioBuffer.duration;
-                        currentRate = newRate;
-                        
-                        // Restart with new rate
-                        stopAudioPlayback();
-                        
-                        // Create new source with new rate
-                        currentSource = audioContext.createBufferSource();
-                        currentSource.buffer = audioBuffer;
-                        currentSource.loop = true;
-                        currentSource.playbackRate.value = currentRate;
-                        currentSource.connect(gainNode);
-                        
-                        const offset = pauseTime % audioBuffer.duration;
-                        currentSource.start(audioContext.currentTime, offset);
-                        startTime = audioContext.currentTime - offset / currentRate;
+                for (let channel = 0; channel < 2; channel++) {
+                    const channelData = impulse.getChannelData(channel);
+                    for (let i = 0; i < length; i++) {
+                        const decay = Math.pow(1 - i / length, 2);
+                        channelData[i] = (Math.random() * 2 - 1) * decay * 0.5; // Reduced amplitude
                     }
                 }
-
-                // Smooth volume interpolation
-                const volumeDiff = targetVolume - currentVolume;
-                if (Math.abs(volumeDiff) > 0.001) {
-                    currentVolume += volumeDiff * (1 - SMOOTHING_FACTOR);
-                    gainNode.gain.linearRampToValueAtTime(currentVolume, audioContext.currentTime + 0.1);
-                }
-
-                // Update UI
-                updateAudioIndicator();
+                
+                convolver.buffer = impulse;
             }
-
-            // Update the audio control indicator
-            function updateAudioIndicator() {
-                if (isAudioControlActive) {
-                    rateValue.textContent = `${currentRate.toFixed(2)}x`;
-                    pitchValue.textContent = `${Math.round(currentPitch)} cents`;
-                    volumeValue.textContent = `${Math.round(currentVolume * 100)}%`;
-                    audioIndicator.classList.add('active');
-                    cursorCrosshair.classList.add('active');
-                } else {
-                    audioIndicator.classList.remove('active');
-                    cursorCrosshair.classList.remove('active');
+            
+            // Create improved distortion curve
+            function createDistortionCurve(amount) {
+                const samples = 44100;
+                const curve = new Float32Array(samples);
+                
+                for (let i = 0; i < samples; i++) {
+                    const x = (i * 2) / samples - 1;
+                    // Softer distortion curve
+                    const k = amount * 50;
+                    curve[i] = (1 + k) * x / (1 + k * Math.abs(x));
+                }
+                
+                return curve;
+            }
+            
+            // Enhanced audio parameter update loop with better smoothing
+            function updateAudioParams() {
+                if (isFlipped && !audio.paused && audioContext) {
+                    // Smooth speed changes with better algorithm
+                    const speedDiff = targetSpeed - currentSpeed;
+                    currentSpeed += speedDiff * speedSmoothingFactor;
+                    
+                    // Smooth pitch changes
+                    const pitchDiff = targetPitch - currentPitch;
+                    currentPitch += pitchDiff * effectSmoothingFactor;
+                    
+                    // Smooth scratch intensity
+                    const scratchDiff = targetScratchIntensity - scratchIntensity;
+                    scratchIntensity += scratchDiff * scratchSmoothingFactor;
+                    
+                    // Smooth mouse speed for effects
+                    smoothedMouseSpeed += (mouseSpeed - smoothedMouseSpeed) * 0.1;
+                    
+                    // Apply speed with minimal clipping for better audio quality
+                    const finalSpeed = Math.max(0.25, Math.min(4.0, currentSpeed + scratchIntensity));
+                    
+                    // Use exponential ramp for smoother transitions
+                    if (Math.abs(audio.playbackRate - finalSpeed) > 0.01) {
+                        audio.playbackRate = finalSpeed;
+                    }
+                    
+                    // Update filter with exponential smoothing
+                    const currentTime = audioContext.currentTime;
+                    const rampTime = 0.05; // Very short ramp for responsiveness
+                    
+                    const filterFreq = Math.max(200, Math.min(20000, 
+                        20000 * synthParams.filter * (0.3 + smoothedMouseSpeed * 0.02)
+                    ));
+                    
+                    filterNode.frequency.exponentialRampToValueAtTime(
+                        filterFreq, 
+                        currentTime + rampTime
+                    );
+                    
+                    // Update delay with smooth ramping
+                    const delayAmount = synthParams.delay * 0.3 + 0.001;
+                    delayGain.gain.exponentialRampToValueAtTime(
+                        delayAmount, 
+                        currentTime + rampTime
+                    );
+                    
+                    // Update reverb with smooth ramping
+                    const reverbAmount = synthParams.reverb * 0.6 + 0.001;
+                    reverbNode.gain.exponentialRampToValueAtTime(
+                        reverbAmount, 
+                        currentTime + rampTime
+                    );
+                    
+                    // Update distortion with better curve management
+                    if (synthParams.distortion > 0.02) {
+                        const curve = createDistortionCurve(synthParams.distortion);
+                        if (distortionNode.curve !== curve) {
+                            distortionNode.curve = curve;
+                        }
+                    } else {
+                        if (distortionNode.curve !== null) {
+                            distortionNode.curve = null;
+                        }
+                    }
+                    
+                    // Visual feedback
+                    updateVisualEffects();
+                }
+                
+                requestAnimationFrame(updateAudioParams);
+            }
+            
+            // Update visual effects based on audio
+            function updateVisualEffects() {
+                // Vinyl spinning speed with smooth animation
+                if (vinylRecord && isFlipped) {
+                    const rpm = currentSpeed * 33.33;
+                    const duration = Math.max(0.1, 60 / rpm);
+                    vinylRecord.style.animationDuration = `${duration}s`;
+                    
+                    // Background distortion effect with threshold
+                    if (synthParams.distortion > 0.4) {
+                        bigLogoBg.classList.add('distorted');
+                    } else {
+                        bigLogoBg.classList.remove('distorted');
+                    }
                 }
             }
-
-            // Audio update loop
-            function audioUpdateLoop() {
-                if (isFlipped && isPlaying) {
-                    updateAudioParameters();
-                }
-                requestAnimationFrame(audioUpdateLoop);
-            }
+            
+            initAudioContext();
+            updateAudioParams();
 
             const page1 = document.getElementById('page1');
             const musicParticles = document.getElementById('musicParticles');
@@ -858,31 +1018,241 @@
             const swipeHint = document.getElementById('swipeHint');
             const randomLogo = document.getElementById('randomLogo');
             const bigLogoBg = document.getElementById('bigLogoBg');
-            const speakerImg = document.getElementById('speakerImg');
+            const vinylRecord = document.getElementById('vinylRecord');
+            const vinylNeedle = document.getElementById('vinylNeedle');
+            const synthControls = document.getElementById('synthControls');
+            
+            // Turntable controls
+            const speedSlider = document.getElementById('speedSlider');
+            const speedThumb = document.getElementById('speedThumb');
+            const pitchSlider = document.getElementById('pitchSlider');
+            const pitchThumb = document.getElementById('pitchThumb');
 
-            // Enhanced mouse tracking for audio control
+            // Offscreen canvas do pobierania pikseli tła
+            const offCanvas = document.createElement('canvas');
+            const offCtx = offCanvas.getContext('2d');
+
+            // Enhanced mouse tracking with improved scratch detection
             document.addEventListener('mousemove', (e) => {
+                lastMouseX = mouseX;
+                lastMouseY = mouseY;
                 mouseX = e.clientX;
                 mouseY = e.clientY;
                 
-                // Update crosshair position
-                cursorCrosshair.style.left = mouseX + 'px';
-                cursorCrosshair.style.top = mouseY + 'px';
+                const now = Date.now();
+                const timeDelta = now - lastMouseUpdate;
                 
-                if (isFlipped) {
-                    isAudioControlActive = true;
+                if (timeDelta > 10) { // Higher frequency updates
+                    const distance = Math.sqrt(
+                        Math.pow(mouseX - lastMouseX, 2) + 
+                        Math.pow(mouseY - lastMouseY, 2)
+                    );
+                    const currentSpeedCalc = distance / timeDelta * 16;
+                    
+                    speedHistory.push(currentSpeedCalc);
+                    if (speedHistory.length > 8) { // Larger history for better smoothing
+                        speedHistory.shift();
+                    }
+                    
+                    mouseSpeed = speedHistory.reduce((a, b) => a + b, 0) / speedHistory.length;
+                    
+                    // Enhanced scratching effect with better control
+                    if (isFlipped && permissionGranted && !audio.paused) {
+                        if (mouseSpeed > 12) {
+                            // Calculate scratch intensity based on speed and direction
+                            const directionX = mouseX - lastMouseX;
+                            const scratchMultiplier = Math.sin(Date.now() * 0.02) * 0.05; // Smaller variations
+                            targetScratchIntensity = scratchMultiplier * Math.min(1, mouseSpeed / 20);
+                        } else {
+                            targetScratchIntensity = 0;
+                        }
+                        
+                        // Update target speed more smoothly
+                        targetSpeed = synthParams.speed;
+                    }
+                    
+                    lastMouseUpdate = now;
                 }
             });
 
-            document.addEventListener('mouseleave', () => {
-                isAudioControlActive = false;
-                updateAudioIndicator();
+            // Initialize synthesizer controls
+            function initSynthControls() {
+                const knobs = document.querySelectorAll('.synth-knob');
+                
+                knobs.forEach(knob => {
+                    let isDragging = false;
+                    let startY = 0;
+                    let startValue = 0;
+                    const param = knob.dataset.param;
+                    const indicator = knob.querySelector('.synth-knob-indicator');
+                    
+                    function updateKnob(value) {
+                        synthParams[param] = Math.max(0, Math.min(1, value));
+                        const rotation = (synthParams[param] - 0.5) * 270; // -135 to +135 degrees
+                        indicator.style.setProperty('--rotation', `${rotation}deg`);
+                    }
+                    
+                    // Initialize knob position
+                    updateKnob(synthParams[param]);
+                    
+                    knob.addEventListener('mousedown', (e) => {
+                        isDragging = true;
+                        startY = e.clientY;
+                        startValue = synthParams[param];
+                        e.preventDefault();
+                    });
+                    
+                    document.addEventListener('mousemove', (e) => {
+                        if (!isDragging) return;
+                        
+                        const deltaY = startY - e.clientY; // Inverted for natural feel
+                        const sensitivity = 0.004; // Slightly reduced for better control
+                        const newValue = startValue + deltaY * sensitivity;
+                        
+                        updateKnob(newValue);
+                    });
+                    
+                    document.addEventListener('mouseup', () => {
+                        isDragging = false;
+                    });
+                    
+                    // Touch support
+                    knob.addEventListener('touchstart', (e) => {
+                        isDragging = true;
+                        startY = e.touches[0].clientY;
+                        startValue = synthParams[param];
+                        e.preventDefault();
+                    });
+                    
+                    document.addEventListener('touchmove', (e) => {
+                        if (!isDragging) return;
+                        
+                        const deltaY = startY - e.touches[0].clientY;
+                        const sensitivity = 0.004;
+                        const newValue = startValue + deltaY * sensitivity;
+                        
+                        updateKnob(newValue);
+                        e.preventDefault();
+                    });
+                    
+                    document.addEventListener('touchend', () => {
+                        isDragging = false;
+                    });
+                });
+            }
+
+            // Initialize turntable sliders with improved responsiveness
+            function initTurntableControls() {
+                // Speed slider
+                let speedDragging = false;
+                speedThumb.style.left = '44px'; // Center position (50% of 80px - 6px for thumb width)
+                
+                speedSlider.addEventListener('mousedown', (e) => {
+                    speedDragging = true;
+                    updateSpeedSlider(e.clientX);
+                    e.preventDefault();
+                });
+                
+                function updateSpeedSlider(clientX) {
+                    const rect = speedSlider.getBoundingClientRect();
+                    const position = Math.max(0, Math.min(80, clientX - rect.left));
+                    speedThumb.style.left = `${position - 6}px`;
+                    
+                    // Map to speed range (0.5x to 2x) with smooth curve
+                    const normalizedPos = position / 80;
+                    synthParams.speed = 0.5 + normalizedPos * 1.5;
+                    targetSpeed = synthParams.speed;
+                }
+                
+                document.addEventListener('mousemove', (e) => {
+                    if (speedDragging) {
+                        updateSpeedSlider(e.clientX);
+                    }
+                });
+                
+                document.addEventListener('mouseup', () => {
+                    speedDragging = false;
+                });
+                
+                // Pitch slider
+                let pitchDragging = false;
+                pitchThumb.style.left = '44px'; // Center position
+                
+                pitchSlider.addEventListener('mousedown', (e) => {
+                    pitchDragging = true;
+                    updatePitchSlider(e.clientX);
+                    e.preventDefault();
+                });
+                
+                function updatePitchSlider(clientX) {
+                    const rect = pitchSlider.getBoundingClientRect();
+                    const position = Math.max(0, Math.min(80, clientX - rect.left));
+                    pitchThumb.style.left = `${position - 6}px`;
+                    
+                    // Map to pitch range (-12 to +12 semitones)
+                    const normalizedPos = (position / 80) * 2 - 1; // -1 to 1
+                    synthParams.pitch = normalizedPos * 12;
+                    targetPitch = synthParams.pitch;
+                }
+                
+                document.addEventListener('mousemove', (e) => {
+                    if (pitchDragging) {
+                        updatePitchSlider(e.clientX);
+                    }
+                });
+                
+                document.addEventListener('mouseup', () => {
+                    pitchDragging = false;
+                });
+                
+                // Touch support for sliders
+                speedSlider.addEventListener('touchstart', (e) => {
+                    speedDragging = true;
+                    updateSpeedSlider(e.touches[0].clientX);
+                    e.preventDefault();
+                });
+                
+                pitchSlider.addEventListener('touchstart', (e) => {
+                    pitchDragging = true;
+                    updatePitchSlider(e.touches[0].clientX);
+                    e.preventDefault();
+                });
+                
+                document.addEventListener('touchmove', (e) => {
+                    if (speedDragging) {
+                        updateSpeedSlider(e.touches[0].clientX);
+                        e.preventDefault();
+                    }
+                    if (pitchDragging) {
+                        updatePitchSlider(e.touches[0].clientX);
+                        e.preventDefault();
+                    }
+                });
+                
+                document.addEventListener('touchend', () => {
+                    speedDragging = false;
+                    pitchDragging = false;
+                });
+            }
+
+            function resizeCanvas() {
+                offCanvas.width = window.innerWidth;
+                offCanvas.height = window.innerHeight;
+                drawBgToCanvas();
+            }
+
+            function drawBgToCanvas() {
+                if (!bigLogoBg.complete) return;
+                offCtx.clearRect(0, 0, offCanvas.width, offCanvas.height);
+                offCtx.drawImage(bigLogoBg, 0, 0, offCanvas.width, offCanvas.height);
+            }
+
+            bigLogoBg.addEventListener('load', () => {
+                resizeCanvas();
             });
 
-            document.addEventListener('mouseenter', () => {
-                if (isFlipped) {
-                    isAudioControlActive = true;
-                }
+            window.addEventListener('resize', () => {
+                resizeCanvas();
             });
 
             function setRandomLogo() {
@@ -894,19 +1264,19 @@
             setRandomLogo();
 
             function getSpeakerPosition() {
-                const speakerRect = speakerImg.getBoundingClientRect();
+                const vinylRect = vinylRecord.getBoundingClientRect();
                 return {
-                    x: speakerRect.left + speakerRect.width / 2,
-                    y: speakerRect.top + speakerRect.height / 2
+                    x: vinylRect.left + vinylRect.width / 2,
+                    y: vinylRect.top + vinylRect.height / 2
                 };
             }
 
             function createMusicParticle() {
-                if (!isFlipped || !isPlaying) return;
+                if (!isFlipped) return;
                 
                 const particle = document.createElement('div');
                 particle.classList.add('particle');
-                const noteEmojis = ['♪', '♫', '♩', '♬', '𝄞', '𝄢'];
+                const noteEmojis = ['♪', '♫', '♩', '♬', '𝄞', '𝄢', '♭', '♯'];
                 particle.textContent = noteEmojis[Math.floor(Math.random() * noteEmojis.length)];
                 
                 const speakerPos = getSpeakerPosition();
@@ -918,51 +1288,70 @@
                 particle.style.position = 'absolute';
                 particle.style.left = startX + 'px';
                 particle.style.top = startY + 'px';
-                particle.style.color = currentRate > 1.0 ? '#ff6b6b' : currentRate < 1.0 ? '#4ecdc4' : '#fff';
+
+                let r, g, b;
+                try {
+                    const data = offCtx.getImageData(Math.floor(startX), Math.floor(startY), 1, 1).data;
+                    [r, g, b] = data;
+                } catch {
+                    r = g = b = 0;
+                }
+                const brightness = (r + g + b) / 3;
+                particle.style.color = brightness > 128 ? '#000' : '#fff';
+
+                // Add glow effect based on audio intensity
+                const glowIntensity = Math.min(1, smoothedMouseSpeed * 0.08 + synthParams.distortion);
+                particle.style.textShadow = `0 0 ${8 + glowIntensity * 15}px currentColor`;
 
                 musicParticles.appendChild(particle);
                 
-                const targetX = mouseX;
-                const targetY = mouseY;
+                // Enhanced particle movement with smoother audio responsiveness
+                const targetX = mouseX + (Math.random() - 0.5) * 100;
+                const targetY = mouseY + (Math.random() - 0.5) * 100;
+                
                 const deltaX = targetX - startX;
                 const deltaY = targetY - startY;
                 
-                // Particle behavior based on playback rate
-                const intensity = Math.abs(currentRate - 1.0);
-                const spiralRadius = 20 + intensity * 40;
-                const rotations = 0.5 + intensity;
-                const duration = Math.max(800, 2000 / Math.max(0.5, currentRate));
+                // Speed based on audio parameters with smoothing
+                const baseSpeed = 800 + currentSpeed * 400;
+                const speedVariation = synthParams.filter * 300 + synthParams.delay * 200;
+                const duration = baseSpeed + speedVariation + Math.random() * 300;
+                
+                // Enhanced spiral with smoother audio modulation
+                const spiralRadius = 15 + synthParams.reverb * 25;
+                const rotations = 0.8 + synthParams.filter * 1.5;
                 
                 const keyframes = [];
-                const steps = 25;
+                const steps = 30; // Reduced for better performance
                 
                 for (let i = 0; i <= steps; i++) {
                     const progress = i / steps;
                     const easeProgress = 1 - Math.pow(1 - progress, 2);
                     
+                    // Smoother audio-modulated spiral
                     const angle = rotations * 2 * Math.PI * progress;
-                    const currentRadius = spiralRadius * (1 - progress * 0.8);
-                    const direction = currentRate > 1.0 ? 1 : -1;
+                    const currentRadius = spiralRadius * (1 - progress * 0.7) * 
+                        (1 + Math.sin(progress * Math.PI * 3) * synthParams.distortion * 0.2);
                     
-                    const spiralX = Math.cos(angle * direction) * currentRadius;
-                    const spiralY = Math.sin(angle * direction) * currentRadius;
+                    const spiralX = Math.cos(angle + currentSpeed * progress * Math.PI * 0.5) * currentRadius;
+                    const spiralY = Math.sin(angle + currentSpeed * progress * Math.PI * 0.5) * currentRadius;
                     
                     const mainX = deltaX * easeProgress;
                     const mainY = deltaY * easeProgress;
                     
-                    const rotation = angle * 180 / Math.PI * currentRate;
-                    const scale = 1 + intensity * 0.4 * Math.sin(progress * Math.PI * 3);
+                    const rotation = angle * 180 / Math.PI + synthParams.pitch * progress * 5;
+                    const scale = 1 + synthParams.reverb * Math.sin(progress * Math.PI) * 0.3;
                     
                     keyframes.push({
                         transform: `translate(${mainX + spiralX}px, ${mainY + spiralY}px) rotate(${rotation}deg) scale(${scale})`,
-                        opacity: Math.max(0.2, 1 - progress * 0.8),
+                        opacity: Math.max(0, 1 - progress * 0.4),
                         offset: progress
                     });
                 }
                 
                 particle.animate(keyframes, {
                     duration: duration,
-                    easing: 'ease-out'
+                    easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
                 });
                 
                 setTimeout(() => {
@@ -975,20 +1364,18 @@
             function startMusicParticles() {
                 stopMusicParticles();
                 
-                const baseInterval = 200;
-                const rateMultiplier = Math.max(0.3, Math.min(2.0, currentRate));
-                const interval = baseInterval / rateMultiplier;
-                
+                // Base particle generation with dynamic timing
                 particleInterval = setInterval(() => {
                     createMusicParticle();
-                }, interval);
+                }, Math.max(60, 120 - synthParams.reverb * 40));
                 
+                // Extra particles based on audio activity with smoother control
                 extraParticleInterval = setInterval(() => {
-                    const intensity = Math.abs(currentRate - 1.0);
-                    if (Math.random() > Math.max(0.4, 0.9 - intensity)) {
+                    const extraChance = 0.2 + smoothedMouseSpeed * 0.03 + synthParams.distortion * 0.3;
+                    if (Math.random() < extraChance) {
                         createMusicParticle();
                     }
-                }, interval * 0.8);
+                }, 80);
             }
 
             function stopMusicParticles() {
@@ -1010,22 +1397,25 @@
                 });
             }
 
-            // Audio unlock function
-            async function unlockAudio() {
+            // Enhanced audio unlock function
+            function unlockAudio() {
                 if (!permissionGranted) {
-                    try {
-                        if (!audioContext) {
-                            await initAudio();
-                        }
-                        
-                        if (audioContext.state === 'suspended') {
-                            await audioContext.resume();
-                        }
-                        
-                        permissionGranted = true;
-                        console.log('Audio unlocked successfully');
-                    } catch (error) {
-                        console.log('Audio unlock failed:', error);
+                    // Resume AudioContext if suspended
+                    if (audioContext && audioContext.state === 'suspended') {
+                        audioContext.resume();
+                    }
+                    
+                    // Try to play and immediately pause to unlock
+                    const playPromise = audio.play();
+                    if (playPromise !== undefined) {
+                        playPromise.then(() => {
+                            audio.pause();
+                            audio.currentTime = 0;
+                            permissionGranted = true;
+                            console.log('Audio unlocked successfully');
+                        }).catch(err => {
+                            console.log('Audio unlock failed:', err);
+                        });
                     }
                 }
             }
@@ -1035,6 +1425,7 @@
                 document.addEventListener(eventType, unlockAudio, { once: true });
             });
 
+            // Specific unlock when clicking the book
             book.addEventListener('click', unlockAudio);
             book.addEventListener('touchstart', unlockAudio);
 
@@ -1064,7 +1455,11 @@
             function startDrag(e) {
                 resetHintTimer();
                 
-                if (e.target.classList.contains('btn')) {
+                if (e.target.classList.contains('btn') || 
+                    e.target.classList.contains('synth-knob') ||
+                    e.target.classList.contains('slider-thumb') ||
+                    e.target.closest('.synth-controls') ||
+                    e.target.closest('.control-slider')) {
                     return;
                 }
                 
@@ -1158,7 +1553,7 @@
                 endDrag(e);
             }
 
-            async function flipPage() {
+            function flipPage() {
                 isFlipped = true;
                 currentRotation = -180;
                 page1.classList.add('flipped');
@@ -1168,42 +1563,62 @@
                 hideSwipeHint();
                 clearTimeout(hintTimeout);
                 
-                // Initialize audio if not already done
-                if (!audioContext) {
-                    await initAudio();
-                }
+                // Show synthesizer controls
+                synthControls.classList.add('visible');
                 
-                // Resume AudioContext if needed
-                if (audioContext && audioContext.state === 'suspended') {
-                    await audioContext.resume();
-                }
+                // Initialize controls
+                initSynthControls();
+                initTurntableControls();
                 
-                // Reset audio parameters
-                currentRate = 1.0;
-                targetRate = 1.0;
-                currentVolume = 1.0;
-                targetVolume = 1.0;
-                currentPitch = 0;
-                pauseTime = 0;
+                // Reset audio parameters for smooth start
+                targetSpeed = synthParams.speed;
+                currentSpeed = synthParams.speed;
+                audio.preservesPitch = false;
+                audio.currentTime = 0;
                 
-                // Start seamless audio playback
-                try {
-                    startAudioPlayback();
-                    isAudioControlActive = true;
-                    
-                    // Start update loop
-                    audioUpdateLoop();
-                    
-                    console.log('Audio playback started with seamless control');
-                    
-                    // Fade in
-                    if (gainNode) {
-                        gainNode.gain.setValueAtTime(0.01, audioContext.currentTime);
-                        gainNode.gain.linearRampToValueAtTime(1.0, audioContext.currentTime + 0.8);
+                // Start vinyl animation
+                vinylRecord.classList.add('spinning');
+                vinylNeedle.classList.add('active');
+                
+                // Enhanced audio playing with better error handling
+                const playAudio = () => {
+                    // Resume AudioContext if needed
+                    if (audioContext && audioContext.state === 'suspended') {
+                        audioContext.resume();
                     }
-                } catch (error) {
-                    console.error('Failed to start audio playback:', error);
-                }
+                    
+                    const playPromise = audio.play();
+                    if (playPromise !== undefined) {
+                        playPromise.then(() => {
+                            console.log('Turntable audio playing successfully');
+                            permissionGranted = true;
+                            
+                            // Smooth fade in
+                            if (gainNode) {
+                                gainNode.gain.setValueAtTime(0.001, audioContext.currentTime);
+                                gainNode.gain.exponentialRampToValueAtTime(1.0, audioContext.currentTime + 1.2);
+                            }
+                        }).catch(err => {
+                            console.log('Audio play failed:', err);
+                            
+                            if (!permissionGranted) {
+                                const retryPlay = () => {
+                                    audio.play().catch(e => console.log('Retry failed:', e));
+                                    document.removeEventListener('click', retryPlay);
+                                    document.removeEventListener('touchend', retryPlay);
+                                };
+                                document.addEventListener('click', retryPlay, { once: true });
+                                document.addEventListener('touchend', retryPlay, { once: true });
+                            }
+                        });
+                    }
+                };
+                
+                // Try to play immediately
+                playAudio();
+                
+                // Also try after a small delay
+                setTimeout(playAudio, 100);
                 
                 startMusicParticles();
             }
@@ -1217,18 +1632,34 @@
                 
                 resetHintTimer();
                 
-                // Reset audio parameters
-                currentRate = 1.0;
-                targetRate = 1.0;
-                currentVolume = 1.0;
-                targetVolume = 1.0;
-                currentPitch = 0;
-                isAudioControlActive = false;
+                // Hide synthesizer controls
+                synthControls.classList.remove('visible');
                 
-                // Stop audio playback
-                stopAudioPlayback();
-                updateAudioIndicator();
+                // Stop vinyl animation
+                vinylRecord.classList.remove('spinning');
+                vinylNeedle.classList.remove('active');
+                
+                // Smooth fade out and stop
+                if (gainNode && audioContext) {
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.8);
+                    setTimeout(() => {
+                        audio.pause();
+                        audio.playbackRate = 1.0;
+                        // Reset parameters
+                        targetSpeed = 1.0;
+                        currentSpeed = 1.0;
+                        targetScratchIntensity = 0;
+                        scratchIntensity = 0;
+                    }, 800);
+                } else {
+                    audio.pause();
+                    audio.playbackRate = 1.0;
+                }
+                
                 stopMusicParticles();
+                
+                // Reset visual effects
+                bigLogoBg.classList.remove('distorted');
             }
 
             function resetPage() {
@@ -1240,31 +1671,6 @@
                 }, 600);
             }
 
-            // Keyboard shortcuts for audio control
-            document.addEventListener('keydown', (e) => {
-                if (!isFlipped) return;
-                
-                switch(e.key) {
-                    case 'r': // Reset audio parameters
-                        targetRate = 1.0;
-                        targetVolume = 1.0;
-                        currentPitch = 0;
-                        break;
-                    case ' ': // Space to pause/play
-                        e.preventDefault();
-                        if (isPlaying) {
-                            stopAudioPlayback();
-                        } else {
-                            startAudioPlayback();
-                        }
-                        break;
-                    case 'Escape': // Deactivate audio control
-                        isAudioControlActive = false;
-                        updateAudioIndicator();
-                        break;
-                }
-            });
-
             window.handleButtonClick = function(action) {
                 switch(action) {
                     case 'archive':
@@ -1274,7 +1680,7 @@
                         window.open('https://www.instagram.com/klub_zaproszenie/', '_blank');
                         break;
                     case 'about':
-                        alert('Seamless Audio Control:\n\n• Vertical mouse movement controls playback rate and pitch together\n• Horizontal movement controls volume\n• Center position = normal playback (1.0x)\n• Uses Web Audio API for smooth, artifact-free manipulation\n\nControls:\n• R - Reset parameters\n• Space - Pause/Play\n• ESC - Deactivate control');
+                        alert('Klub Zaproszenie - Interactive Turntable Synthesizer\n\nUse the turntable controls to manipulate speed and pitch.\nAdjust the synthesizer knobs for filter, reverb, delay, and distortion effects.\nMove your mouse around for real-time scratching and particle effects!');
                         break;
                 }
             }
