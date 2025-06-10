@@ -69,20 +69,26 @@
         }
 
         #allowsound {
-            width: 60vw;
-            max-width: 600px;
+            width: 80vw;
+            max-width: 800px;
             height: auto;
             display: block;
-            filter: url(#wave);
-            animation: waveAnimation 4s ease-in-out infinite;
+            animation: paperWave 6s ease-in-out infinite;
+            transform-origin: center center;
         }
 
-        @keyframes waveAnimation {
+        @keyframes paperWave {
             0%, 100% { 
-                filter: url(#wave1); 
+                transform: perspective(1000px) rotateX(2deg) rotateY(-1deg);
+            }
+            25% { 
+                transform: perspective(1000px) rotateX(-1deg) rotateY(2deg);
             }
             50% { 
-                filter: url(#wave2); 
+                transform: perspective(1000px) rotateX(1deg) rotateY(-2deg);
+            }
+            75% { 
+                transform: perspective(1000px) rotateX(-2deg) rotateY(1deg);
             }
         }
 
@@ -397,20 +403,6 @@
 <body>
     <!-- BANNER -->
     <div id="banner">
-        <!-- SVG Filters for wave effect -->
-        <svg width="0" height="0" style="position: absolute;">
-            <defs>
-                <filter id="wave1" x="-20%" y="-20%" width="140%" height="140%">
-                    <feTurbulence baseFrequency="0.02 0.04" numOctaves="3" result="turbulence" seed="1"/>
-                    <feDisplacementMap in="SourceGraphic" in2="turbulence" scale="8"/>
-                </filter>
-                <filter id="wave2" x="-20%" y="-20%" width="140%" height="140%">
-                    <feTurbulence baseFrequency="0.025 0.035" numOctaves="3" result="turbulence" seed="2"/>
-                    <feDisplacementMap in="SourceGraphic" in2="turbulence" scale="12"/>
-                </filter>
-            </defs>
-        </svg>
-        
         <!-- ARM FOLLOWING CURSOR -->
         <img id="arm" src="arm.png" alt="Arm">
         
@@ -667,10 +659,10 @@
             let startX = 0;
             let currentRotation = 0;
             let isFlipped = false;
-            let particleInterval;
-            let extraParticleInterval;
-            let permissionGranted = false;
+            let particleInterval = null;
+            let extraParticleInterval = null;
             let hintTimeout;
+            let isAudioPlaying = false;
 
             let lastMouseX = 0;
             let lastMouseY = 0;
@@ -846,30 +838,31 @@
             }
 
             function startMusicParticles() {
+                // Zatrzymaj poprzednie instancje
                 stopMusicParticles();
                 
-                particleInterval = setInterval(() => {
-                    createMusicParticle();
-                }, 300); // Zwiększone z 120 do 300ms - mniej nutek
+                // Sprawdź czy już działają
+                if (particleInterval !== null) return;
                 
-                extraParticleInterval = setInterval(() => {
-                    if (Math.random() > 0.7) { // Zmienione z 0.3 na 0.7 - znacznie mniej dodatkowych nutek
+                particleInterval = setInterval(() => {
+                    if (isFlipped) { // Dodatkowe sprawdzenie
                         createMusicParticle();
                     }
-                }, 200); // Zwiększone z 80 do 200ms
+                }, 500); // Jeszcze rzadziej - 500ms
             }
 
             function stopMusicParticles() {
-                if (particleInterval) {
+                if (particleInterval !== null) {
                     clearInterval(particleInterval);
                     particleInterval = null;
                 }
                 
-                if (extraParticleInterval) {
+                if (extraParticleInterval !== null) {
                     clearInterval(extraParticleInterval);
                     extraParticleInterval = null;
                 }
                 
+                // Usuń wszystkie istniejące nutki
                 const existingParticles = musicParticles.querySelectorAll('.particle');
                 existingParticles.forEach(particle => {
                     if (particle.parentNode) {
@@ -879,8 +872,7 @@
             }
 
             book.addEventListener('click', () => {
-                // Usuń logikę permissionGranted - muzyka będzie grać zawsze gdy książka otwarta
-                console.log('Kliknięto książkę');
+                console.log('Kliknięto książkę - isFlipped:', isFlipped);
             });
 
             function showSwipeHint() {
@@ -1004,6 +996,9 @@
             }
 
             function flipPage() {
+                // Zabezpieczenie przed wielokrotnym wywołaniem
+                if (isFlipped) return;
+                
                 isFlipped = true;
                 currentRotation = -180;
                 page1.classList.add('flipped');
@@ -1013,21 +1008,33 @@
                 hideSwipeHint();
                 clearTimeout(hintTimeout);
                 
-                // Zawsze odtwarzaj muzykę gdy książka jest otwarta
+                // Zatrzymaj poprzednią muzykę i cząsteczki
+                audio.pause();
                 audio.currentTime = 0;
+                stopMusicParticles();
+                
+                // Ustaw flagę i uruchom nową instancję
+                isAudioPlaying = true;
                 audio.playbackRate = 1.0;
-                audio.play().catch(e => {
+                audio.play().then(() => {
+                    console.log('Audio started successfully');
+                }).catch(e => {
                     console.log('Nie można odtworzyć audio:', e);
-                    // Spróbuj ponownie po interakcji użytkownika
-                    document.addEventListener('click', () => {
-                        audio.play().catch(console.log);
-                    }, { once: true });
+                    isAudioPlaying = false;
                 });
                 
-                startMusicParticles();
+                // Uruchom cząsteczki po krótkim opóźnieniu
+                setTimeout(() => {
+                    if (isFlipped) {
+                        startMusicParticles();
+                    }
+                }, 100);
             }
 
             function unflipPage() {
+                // Zabezpieczenie przed wielokrotnym wywołaniem
+                if (!isFlipped) return;
+                
                 isFlipped = false;
                 currentRotation = 0;
                 page1.classList.remove('flipped');
@@ -1036,7 +1043,8 @@
                 
                 resetHintTimer();
                 
-                // Zawsze zatrzymaj muzykę gdy książka jest zamknięta
+                // Zatrzymaj wszystko
+                isAudioPlaying = false;
                 audio.pause();
                 audio.playbackRate = 1.0;
                 stopMusicParticles();
