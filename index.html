@@ -909,4 +909,113 @@
                 
                 const clientX = (e.type === 'touchmove') ? e.touches[0].clientX : e.clientX;
                 const deltaX = clientX - startX;
-                const sensitivity = 0.
+                const sensitivity = 0.8;
+                let rotation;
+                
+                if (isFlipped) {
+                    rotation = Math.max(-180, Math.min(0, -180 + deltaX * sensitivity));
+                } else {
+                    rotation = Math.max(-180, Math.min(0, deltaX * sensitivity));
+                }
+                
+                page1.style.transform = `rotateY(${rotation}deg)`;
+            }
+
+            function endDrag(e) {
+                if (!isDragging) return;
+                
+                isDragging = false;
+                page1.classList.remove('dragging');
+                page1.style.transition = 'transform 0.8s ease-out';
+                
+                const clientX = (e.type === 'touchend' && e.changedTouches) ? e.changedTouches[0].clientX : e.clientX;
+                const deltaX = clientX - startX;
+                const threshold = 60;
+                
+                if (deltaX < -threshold && !isFlipped) {
+                    flipPage();
+                } else if (deltaX > threshold && isFlipped) {
+                    unflipPage();
+                } else {
+                    resetPage();
+                }
+                
+                document.removeEventListener('mousemove', drag);
+                document.removeEventListener('mouseup', endDrag);
+                document.removeEventListener('touchmove', handleTouchMove);
+                document.removeEventListener('touchend', handleTouchEnd);
+            }
+
+            function handleTouchStart(e) {
+                e.preventDefault();
+                startDrag(e);
+            }
+
+            function handleTouchMove(e) {
+                e.preventDefault();
+                drag(e);
+            }
+
+            function handleTouchEnd(e) {
+                e.preventDefault();
+                endDrag(e);
+            }
+
+            function flipPage() {
+                isFlipped = true;
+                currentRotation = -180;
+                page1.classList.add('flipped');
+                page1.style.transform = 'rotateY(-180deg)';
+                page1.style.zIndex = '1';
+                
+                hideSwipeHint();
+                clearTimeout(hintTimeout);
+                
+                if (permissionGranted) {
+                    audio.currentTime = 0;
+                    audio.playbackRate = 1.0;
+                    audio.play();
+                }
+                startMusicParticles();
+            }
+
+            function unflipPage() {
+                isFlipped = false;
+                currentRotation = 0;
+                page1.classList.remove('flipped');
+                page1.style.transform = 'rotateY(0deg)';
+                page1.style.zIndex = '3';
+                
+                resetHintTimer();
+                
+                audio.pause();
+                audio.playbackRate = 1.0;
+                stopMusicParticles();
+            }
+
+            function resetPage() {
+                const targetRotation = isFlipped ? -180 : 0;
+                page1.style.transition = 'transform 0.6s ease-out';
+                page1.style.transform = `rotateY(${targetRotation}deg)`;
+                setTimeout(() => {
+                    page1.style.transition = '';
+                }, 600);
+            }
+
+            window.handleButtonClick = function(action) {
+                switch(action) {
+                    case 'archive':
+                        alert('Otwieranie archiwum...');
+                        break;
+                    case 'info':
+                        alert('Wyświetlanie informacji...');
+                        break;
+                    case 'about':
+                        alert('O aplikacji...');
+                        break;
+                }
+            }
+        }
+    </script>
+</body>
+</html>
