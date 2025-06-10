@@ -306,7 +306,6 @@
             font-weight: bold;
             pointer-events: none;
             will-change: transform;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
 
         .swipe-hint {
@@ -447,6 +446,7 @@
         let isDrawing = false;
         let hasDrawn = false;
         let transitionStarted = false;
+        let audioPermissionGranted = false;
 
         // Set canvas size
         function resizeDrawingCanvas() {
@@ -499,6 +499,19 @@
             
             if (!hasDrawn) {
                 hasDrawn = true;
+                
+                // Grant audio permission when user draws
+                if (!audioPermissionGranted) {
+                    // Create a temporary audio element to unlock audio context
+                    const tempAudio = new Audio();
+                    tempAudio.play().then(() => {
+                        tempAudio.pause();
+                        audioPermissionGranted = true;
+                    }).catch(() => {
+                        console.log('Audio permission not granted');
+                    });
+                }
+                
                 setTimeout(startTransition, 500); // Start transition after a short delay
             }
         }
@@ -568,7 +581,8 @@
             let isFlipped = false;
             let particleInterval;
             let extraParticleInterval;
-            let permissionGranted = false;
+            // Initialize with permission already granted from banner
+            let permissionGranted = audioPermissionGranted;
             let hintTimeout;
 
             // Zmienne do śledzenia ruchu kursora
@@ -708,8 +722,8 @@
                 const spiralRadius = 30 + Math.random() * 20; // Smaller, consistent radius
                 const rotations = 1.5 + Math.random() * 0.5; // Fewer rotations
                 
-                // Consistent speed
-                const duration = 2000 + Math.random() * 1000; // 2-3 seconds
+                // Consistent speed - faster
+                const duration = 1200 + Math.random() * 800; // 1.2-2 seconds (faster than before)
                 
                 const keyframes = [];
                 const steps = 30;
@@ -734,12 +748,10 @@
                     
                     keyframes.push({
                         transform: `translate(${mainX + spiralX}px, ${mainY + spiralY}px) rotate(${rotation}deg)`,
-                        opacity: 1 - progress * 0.5, // Gradual fade
+                        opacity: 1, // No fade - constant opacity
                         offset: progress
                     });
                 }
-                
-                keyframes[keyframes.length - 1].opacity = 0;
                 
                 particle.animate(keyframes, {
                     duration: duration,
@@ -927,11 +939,17 @@
                 hideSwipeHint();
                 clearTimeout(hintTimeout);
                 
-                if (permissionGranted) {
-                    audio.currentTime = 0;
-                    audio.playbackRate = 1.0;
-                    audio.play();
-                }
+                // Always try to play audio when book opens
+                audio.currentTime = 0;
+                audio.playbackRate = 1.0;
+                audio.play().then(() => {
+                    console.log('Audio playing');
+                }).catch((err) => {
+                    console.log('Audio play failed:', err);
+                    // Try once more after user interaction
+                    permissionGranted = false;
+                });
+                
                 startMusicParticles();
             }
 
