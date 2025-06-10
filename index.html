@@ -586,7 +586,7 @@
             let permissionGranted = audioPermissionGranted;
             let hintTimeout;
 
-            // Zmienne do śledzenia ruchu kursora i dotyku
+            // Zmienne do śledzenia ruchu kursora
             let mouseX = 0;
             let mouseY = 0;
             let lastMouseX = 0;
@@ -597,12 +597,21 @@
 
             const audio = new Audio('muza.mp3');
             audio.loop = true;
-            audio.preservesPitch = false;
             
-            // Create and resume AudioContext for better mobile support
+            // Create AudioContext and nodes for pitch control
             let audioContext;
+            let source;
+            let pitchShifter;
+            
             try {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Create media element source
+                source = audioContext.createMediaElementSource(audio);
+                
+                // Create pitch shifter using playback rate (simple approach)
+                // For true pitch shifting, you'd need a more complex solution
+                source.connect(audioContext.destination);
             } catch (e) {
                 console.log('Web Audio API not supported');
             }
