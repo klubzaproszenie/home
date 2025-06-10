@@ -58,43 +58,32 @@
             z-index: 10001;
         }
 
-        /* LEFT SIDE - ALLOW SOUND */
+        /* LEFT SIDE - DRAWING CANVAS */
         .banner-left {
             display: flex;
             flex-direction: column;
             align-items: center;
             position: relative;
+            justify-content: center;
+            width: 50%;
         }
 
         #allowsound {
-            width: 300px;
+            width: 60vw;
+            max-width: 600px;
             height: auto;
+            display: block;
         }
 
-        .yes-no-container {
+        /* Drawing Canvas */
+        #drawingCanvas {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            display: flex;
-            gap: 20px;
-        }
-
-        .yes-btn, .no-btn {
-            font-family: 'Apple Garamond', serif;
-            font-size: 32px;
-            color: #000;
-            background: none;
             border: none;
-            cursor: url('cursorhover.png') 16 16, pointer;
-            text-decoration: none;
-            font-weight: bold;
-            transition: all 0.3s ease;
-        }
-
-        .yes-btn:hover, .no-btn:hover {
-            transform: scale(1.1);
-            text-shadow: 0 0 10px rgba(255,255,255,0.5);
+            cursor: crosshair;
+            z-index: 10002;
         }
 
         /* RIGHT SIDE - TEXT */
@@ -120,18 +109,38 @@
             left: 50%;
             width: 0;
             height: 0;
-            background: radial-gradient(circle, transparent 0%, transparent 49%, #000 50%);
+            background: radial-gradient(circle, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 45%, rgba(0,0,0,1) 50%);
             border-radius: 50%;
             transform: translate(-50%, -50%);
             z-index: 9999;
             pointer-events: none;
-            transition: all 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            transition: all 2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            opacity: 0;
         }
 
         .circle-transition.expanding {
-            width: 300vw;
-            height: 300vw;
-            background: radial-gradient(circle, transparent 0%, transparent 49%, transparent 50%);
+            width: 400vw;
+            height: 400vw;
+            opacity: 1;
+            background: radial-gradient(circle, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 30%, rgba(0,0,0,1) 35%);
+            animation: circleExpand 2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+        }
+
+        @keyframes circleExpand {
+            0% {
+                transform: translate(-50%, -50%) scale(0) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(0.5) rotate(180deg);
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1) rotate(360deg);
+                opacity: 1;
+            }
         }
 
         /* MAIN CONTENT - Initially hidden */
@@ -341,10 +350,8 @@
                 font-size: 48px;
             }
             #allowsound {
-                width: 250px;
-            }
-            .yes-btn, .no-btn {
-                font-size: 28px;
+                width: 70vw;
+                max-width: 500px;
             }
             #arm {
                 width: 150px;
@@ -357,6 +364,9 @@
                 padding: 5vh 5vw;
                 gap: 40px;
             }
+            .banner-left {
+                width: 100%;
+            }
             .banner-right {
                 font-size: 28px;
             }
@@ -364,10 +374,8 @@
                 font-size: 36px;
             }
             #allowsound {
-                width: 200px;
-            }
-            .yes-btn, .no-btn {
-                font-size: 24px;
+                width: 80vw;
+                max-width: 400px;
             }
             #arm {
                 width: 120px;
@@ -381,18 +389,16 @@
         <!-- ARM FOLLOWING CURSOR -->
         <img id="arm" src="arm.png" alt="Arm">
         
-        <!-- LEFT SIDE -->
+        <!-- LEFT SIDE - DRAWING AREA -->
         <div class="banner-left">
             <img id="allowsound" src="allowsound.png" alt="Allow Sound">
-            <div class="yes-no-container">
-                <button class="yes-btn" onclick="acceptSound()">Yes</button>
-                <button class="no-btn" onclick="declineSound()">No</button>
-            </div>
+            <canvas id="drawingCanvas"></canvas>
         </div>
 
         <!-- RIGHT SIDE -->
         <div class="banner-right">
             Sign the sound pledge<br>
+            by drawing on the image<br>
             to join:<br>
             <div class="klub-text">KLUB ZAPROSZENIE</div>
         </div>
@@ -440,6 +446,16 @@
         const arm = document.getElementById('arm');
         const circleTransition = document.getElementById('circleTransition');
         const mainContent = document.getElementById('mainContent');
+        const allowsoundImg = document.getElementById('allowsound');
+        const drawingCanvas = document.getElementById('drawingCanvas');
+        const ctx = drawingCanvas.getContext('2d');
+
+        // Drawing variables
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+        let drawingProgress = 0;
+        const minDrawingThreshold = 0.05; // 5% of canvas area needs to be drawn
 
         // ARM TRACKING
         let mouseX = 0;
@@ -453,6 +469,39 @@
         };
         armImg.src = 'arm.png';
 
+        // Initialize drawing canvas
+        function initDrawingCanvas() {
+            const img = allowsoundImg;
+            const rect = img.getBoundingClientRect();
+            
+            drawingCanvas.width = rect.width;
+            drawingCanvas.height = rect.height;
+            drawingCanvas.style.width = rect.width + 'px';
+            drawingCanvas.style.height = rect.height + 'px';
+            
+            // Set drawing style
+            ctx.lineWidth = 15;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
+            ctx.globalCompositeOperation = 'source-over';
+        }
+
+        // Wait for image to load, then initialize canvas
+        allowsoundImg.onload = function() {
+            initDrawingCanvas();
+        };
+
+        // If image is already loaded
+        if (allowsoundImg.complete) {
+            initDrawingCanvas();
+        }
+
+        // Resize canvas when window resizes
+        window.addEventListener('resize', () => {
+            setTimeout(initDrawingCanvas, 100);
+        });
+
         document.addEventListener('mousemove', (e) => {
             mouseX = e.clientX;
             mouseY = e.clientY;
@@ -462,28 +511,126 @@
                 arm.style.left = (mouseX - arm.offsetWidth / 2) + 'px';
                 arm.style.top = (mouseY - arm.offsetHeight / 2) + 'px';
             }
+
+            // Handle drawing
+            if (isDrawing) {
+                draw(e);
+            }
+        });
+
+        // Drawing functions
+        function startDrawing(e) {
+            if (e.target !== drawingCanvas) return;
+            
+            isDrawing = true;
+            const rect = drawingCanvas.getBoundingClientRect();
+            lastX = e.clientX - rect.left;
+            lastY = e.clientY - rect.top;
+            
+            // Start a new path
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            
+            const rect = drawingCanvas.getBoundingClientRect();
+            const currentX = e.clientX - rect.left;
+            const currentY = e.clientY - rect.top;
+            
+            // Draw line
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(currentX, currentY);
+            ctx.stroke();
+            
+            lastX = currentX;
+            lastY = currentY;
+            
+            // Update drawing progress
+            updateDrawingProgress();
+        }
+
+        function stopDrawing() {
+            if (!isDrawing) return;
+            isDrawing = false;
+        }
+
+        function updateDrawingProgress() {
+            // Calculate how much of the canvas has been drawn on
+            const imageData = ctx.getImageData(0, 0, drawingCanvas.width, drawingCanvas.height);
+            const pixels = imageData.data;
+            let drawnPixels = 0;
+            
+            // Check every 4th pixel for performance (RGBA = 4 values per pixel)
+            for (let i = 3; i < pixels.length; i += 16) { // Check alpha channel every 4th pixel
+                if (pixels[i] > 0) { // If alpha > 0, pixel has been drawn on
+                    drawnPixels++;
+                }
+            }
+            
+            const totalPixels = (drawingCanvas.width * drawingCanvas.height) / 4; // Divided by 4 since we're checking every 4th
+            drawingProgress = drawnPixels / totalPixels;
+            
+            // Check if enough has been drawn
+            if (drawingProgress >= minDrawingThreshold) {
+                acceptSound();
+            }
+        }
+
+        // Event listeners for drawing
+        drawingCanvas.addEventListener('mousedown', startDrawing);
+        document.addEventListener('mousemove', draw);
+        document.addEventListener('mouseup', stopDrawing);
+
+        // Touch events for mobile
+        drawingCanvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent('mousedown', {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            drawingCanvas.dispatchEvent(mouseEvent);
+        });
+
+        drawingCanvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent('mousemove', {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            document.dispatchEvent(mouseEvent);
+        });
+
+        drawingCanvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            const mouseEvent = new MouseEvent('mouseup', {});
+            document.dispatchEvent(mouseEvent);
         });
 
         // BANNER FUNCTIONS
         function acceptSound() {
-            // Start circle transition
-            circleTransition.style.left = mouseX + 'px';
-            circleTransition.style.top = mouseY + 'px';
+            // Start circle transition from center of canvas
+            const canvasRect = drawingCanvas.getBoundingClientRect();
+            const centerX = canvasRect.left + canvasRect.width / 2;
+            const centerY = canvasRect.top + canvasRect.height / 2;
+            
+            circleTransition.style.left = centerX + 'px';
+            circleTransition.style.top = centerY + 'px';
             circleTransition.classList.add('expanding');
             
             setTimeout(() => {
                 banner.classList.add('hidden');
                 mainContent.classList.add('visible');
                 initMainContent();
-            }, 750);
+            }, 1000);
             
             setTimeout(() => {
                 circleTransition.style.display = 'none';
-            }, 1500);
-        }
-
-        function declineSound() {
-            alert('Sound is required to fully experience KLUB ZAPROSZENIE');
+            }, 2000);
         }
 
         // MAIN CONTENT INITIALIZATION (from original code)
@@ -762,136 +909,4 @@
                 if (!isFlipped && inBookArea) {
                     shouldReact = true;
                 } else if (isFlipped && (inBookArea || inFlippedArea)) {
-                    shouldReact = true;
-                }
-                if (!shouldReact) return;
-                
-                e.preventDefault();
-                e.stopPropagation();
-                
-                isDragging = true;
-                startX = clickX;
-                page1.classList.add('dragging');
-                page1.style.transition = 'none';
-                
-                document.addEventListener('mousemove', drag);
-                document.addEventListener('mouseup', endDrag);
-                document.addEventListener('touchmove', handleTouchMove, { passive: false });
-                document.addEventListener('touchend', handleTouchEnd);
-            }
-
-            function drag(e) {
-                if (!isDragging) return;
-                
-                const clientX = (e.type === 'touchmove') ? e.touches[0].clientX : e.clientX;
-                const deltaX = clientX - startX;
-                const sensitivity = 0.8;
-                let rotation;
-                
-                if (isFlipped) {
-                    rotation = Math.max(-180, Math.min(0, -180 + deltaX * sensitivity));
-                } else {
-                    rotation = Math.max(-180, Math.min(0, deltaX * sensitivity));
-                }
-                
-                page1.style.transform = `rotateY(${rotation}deg)`;
-            }
-
-            function endDrag(e) {
-                if (!isDragging) return;
-                
-                isDragging = false;
-                page1.classList.remove('dragging');
-                page1.style.transition = 'transform 0.8s ease-out';
-                
-                const clientX = (e.type === 'touchend' && e.changedTouches) ? e.changedTouches[0].clientX : e.clientX;
-                const deltaX = clientX - startX;
-                const threshold = 60;
-                
-                if (deltaX < -threshold && !isFlipped) {
-                    flipPage();
-                } else if (deltaX > threshold && isFlipped) {
-                    unflipPage();
-                } else {
-                    resetPage();
-                }
-                
-                document.removeEventListener('mousemove', drag);
-                document.removeEventListener('mouseup', endDrag);
-                document.removeEventListener('touchmove', handleTouchMove);
-                document.removeEventListener('touchend', handleTouchEnd);
-            }
-
-            function handleTouchStart(e) {
-                e.preventDefault();
-                startDrag(e);
-            }
-
-            function handleTouchMove(e) {
-                e.preventDefault();
-                drag(e);
-            }
-
-            function handleTouchEnd(e) {
-                e.preventDefault();
-                endDrag(e);
-            }
-
-            function flipPage() {
-                isFlipped = true;
-                currentRotation = -180;
-                page1.classList.add('flipped');
-                page1.style.transform = 'rotateY(-180deg)';
-                page1.style.zIndex = '1';
-                
-                hideSwipeHint();
-                clearTimeout(hintTimeout);
-                
-                if (permissionGranted) {
-                    audio.currentTime = 0;
-                    audio.playbackRate = 1.0;
-                    audio.play();
-                }
-                startMusicParticles();
-            }
-
-            function unflipPage() {
-                isFlipped = false;
-                currentRotation = 0;
-                page1.classList.remove('flipped');
-                page1.style.transform = 'rotateY(0deg)';
-                page1.style.zIndex = '3';
-                
-                resetHintTimer();
-                
-                audio.pause();
-                audio.playbackRate = 1.0;
-                stopMusicParticles();
-            }
-
-            function resetPage() {
-                const targetRotation = isFlipped ? -180 : 0;
-                page1.style.transition = 'transform 0.6s ease-out';
-                page1.style.transform = `rotateY(${targetRotation}deg)`;
-                setTimeout(() => {
-                    page1.style.transition = '';
-                }, 600);
-            }
-
-            window.handleButtonClick = function(action) {
-                switch(action) {
-                    case 'archive':
-                        alert('Otwieranie archiwum...');
-                        break;
-                    case 'info':
-                        alert('Wyświetlanie informacji...');
-                        break;
-                    case 'about':
-                        alert('O aplikacji...');
-                        break;
-                }
-            }
-        }
-    </script>
-</body>
-</html>
+                    shouldReact =
