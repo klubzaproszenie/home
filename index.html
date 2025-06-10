@@ -777,7 +777,7 @@
             let permissionGranted = audioPermissionGranted;
             let hintTimeout;
 
-            // Improved audio variables for smoother playback
+            // Audio variables for turntable/synthesizer
             let audioContext;
             let source;
             let gainNode;
@@ -789,8 +789,6 @@
             let convolver;
             let feedbackGain;
             let delayGain;
-            
-            // Enhanced smooth control system
             let synthParams = {
                 speed: 1.0,
                 pitch: 0,
@@ -800,36 +798,28 @@
                 distortion: 0
             };
 
-            // Improved smoothing with separate systems for different parameters
+            // Smooth control variables
             let targetSpeed = 1.0;
             let currentSpeed = 1.0;
             let targetPitch = 0;
             let currentPitch = 0;
-            
-            // Different smoothing factors for different aspects
-            const speedSmoothingFactor = 0.08;     // Faster response for speed
-            const effectSmoothingFactor = 0.05;    // Medium response for effects
-            const scratchSmoothingFactor = 0.15;   // Quick response for scratching
-            
-            // Enhanced mouse tracking with better debouncing
+            const smoothingFactor = 0.03; // Bardzo płynne przejścia
+
+            // Zmienne do śledzenia ruchu kursora
             let mouseX = 0;
             let mouseY = 0;
             let lastMouseX = 0;
             let lastMouseY = 0;
             let mouseSpeed = 0;
-            let smoothedMouseSpeed = 0;
             let speedHistory = [];
             let lastMouseUpdate = Date.now();
             let vinylRotation = 0;
-            let scratchIntensity = 0;
-            let targetScratchIntensity = 0;
 
             const audio = new Audio('muza.mp3');
             audio.loop = true;
             audio.crossOrigin = 'anonymous';
-            audio.preload = 'auto'; // Better preloading
             
-            // Initialize Web Audio API with improved stability
+            // Initialize Web Audio API with advanced effects
             function initAudioContext() {
                 try {
                     audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -839,33 +829,32 @@
                     gainNode = audioContext.createGain();
                     analyser = audioContext.createAnalyser();
                     
-                    // Create filter with better settings
+                    // Create filter (low-pass for turntable effect)
                     filterNode = audioContext.createBiquadFilter();
                     filterNode.type = 'lowpass';
                     filterNode.frequency.value = 20000;
-                    filterNode.Q.value = 0.7; // Reduced Q for smoother filtering
+                    filterNode.Q.value = 1;
                     
                     // Create reverb
                     convolver = audioContext.createConvolver();
                     reverbNode = audioContext.createGain();
                     
-                    // Create delay with better settings
-                    delayNode = audioContext.createDelay(2.0); // Increased max delay
+                    // Create delay
+                    delayNode = audioContext.createDelay(1.0);
                     delayGain = audioContext.createGain();
                     feedbackGain = audioContext.createGain();
                     
                     // Create distortion
                     distortionNode = audioContext.createWaveShaper();
-                    distortionNode.oversample = '4x'; // Better quality distortion
                     
-                    // Connect audio graph with better routing
-                    source.connect(filterNode);
-                    filterNode.connect(distortionNode);
-                    distortionNode.connect(delayNode);
+                    // Connect audio graph
+                    source.connect(distortionNode);
+                    distortionNode.connect(filterNode);
+                    filterNode.connect(delayNode);
                     delayNode.connect(feedbackGain);
                     feedbackGain.connect(delayNode);
                     delayNode.connect(delayGain);
-                    distortionNode.connect(gainNode);
+                    filterNode.connect(gainNode);
                     delayGain.connect(gainNode);
                     gainNode.connect(convolver);
                     convolver.connect(reverbNode);
@@ -873,17 +862,17 @@
                     reverbNode.connect(analyser);
                     analyser.connect(audioContext.destination);
                     
-                    // Set improved initial values
+                    // Set initial values
                     gainNode.gain.value = 1.0;
-                    delayNode.delayTime.value = 0.25;
-                    delayGain.gain.value = 0.001; // Very low initial value
-                    feedbackGain.gain.value = 0.2; // Reduced feedback for stability
-                    reverbNode.gain.value = 0.001; // Very low initial value
+                    delayNode.delayTime.value = 0.3;
+                    delayGain.gain.value = 0;
+                    feedbackGain.gain.value = 0.3;
+                    reverbNode.gain.value = 0;
                     
                     // Create impulse response for reverb
                     createImpulseResponse();
                     
-                    console.log('Enhanced audio context initialized');
+                    console.log('Advanced audio context initialized');
                 } catch (e) {
                     console.log('Web Audio API not supported:', e);
                 }
@@ -891,98 +880,67 @@
             
             // Create reverb impulse response
             function createImpulseResponse() {
-                const length = audioContext.sampleRate * 3; // Longer reverb
+                const length = audioContext.sampleRate * 2;
                 const impulse = audioContext.createBuffer(2, length, audioContext.sampleRate);
                 
                 for (let channel = 0; channel < 2; channel++) {
                     const channelData = impulse.getChannelData(channel);
                     for (let i = 0; i < length; i++) {
-                        const decay = Math.pow(1 - i / length, 2);
-                        channelData[i] = (Math.random() * 2 - 1) * decay * 0.5; // Reduced amplitude
+                        channelData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 2);
                     }
                 }
                 
                 convolver.buffer = impulse;
             }
             
-            // Create improved distortion curve
+            // Create distortion curve
             function createDistortionCurve(amount) {
                 const samples = 44100;
                 const curve = new Float32Array(samples);
+                const deg = Math.PI / 180;
                 
                 for (let i = 0; i < samples; i++) {
                     const x = (i * 2) / samples - 1;
-                    // Softer distortion curve
-                    const k = amount * 50;
-                    curve[i] = (1 + k) * x / (1 + k * Math.abs(x));
+                    curve[i] = ((3 + amount) * x * 20 * deg) / (Math.PI + amount * Math.abs(x));
                 }
                 
                 return curve;
             }
             
-            // Enhanced audio parameter update loop with better smoothing
+            // Smooth audio parameter update loop
             function updateAudioParams() {
                 if (isFlipped && !audio.paused && audioContext) {
-                    // Smooth speed changes with better algorithm
-                    const speedDiff = targetSpeed - currentSpeed;
-                    currentSpeed += speedDiff * speedSmoothingFactor;
+                    // Smooth speed changes
+                    currentSpeed += (targetSpeed - currentSpeed) * smoothingFactor;
+                    currentPitch += (targetPitch - currentPitch) * smoothingFactor;
                     
-                    // Smooth pitch changes
-                    const pitchDiff = targetPitch - currentPitch;
-                    currentPitch += pitchDiff * effectSmoothingFactor;
+                    // Apply speed with pitch shifting compensation
+                    audio.playbackRate = currentSpeed;
                     
-                    // Smooth scratch intensity
-                    const scratchDiff = targetScratchIntensity - scratchIntensity;
-                    scratchIntensity += scratchDiff * scratchSmoothingFactor;
-                    
-                    // Smooth mouse speed for effects
-                    smoothedMouseSpeed += (mouseSpeed - smoothedMouseSpeed) * 0.1;
-                    
-                    // Apply speed with minimal clipping for better audio quality
-                    const finalSpeed = Math.max(0.25, Math.min(4.0, currentSpeed + scratchIntensity));
-                    
-                    // Use exponential ramp for smoother transitions
-                    if (Math.abs(audio.playbackRate - finalSpeed) > 0.01) {
-                        audio.playbackRate = finalSpeed;
-                    }
-                    
-                    // Update filter with exponential smoothing
-                    const currentTime = audioContext.currentTime;
-                    const rampTime = 0.05; // Very short ramp for responsiveness
-                    
-                    const filterFreq = Math.max(200, Math.min(20000, 
-                        20000 * synthParams.filter * (0.3 + smoothedMouseSpeed * 0.02)
-                    ));
-                    
+                    // Update filter based on speed and mouse movement
+                    const filterFreq = 20000 * synthParams.filter * (0.5 + mouseSpeed * 0.05);
                     filterNode.frequency.exponentialRampToValueAtTime(
-                        filterFreq, 
-                        currentTime + rampTime
+                        Math.max(200, Math.min(20000, filterFreq)), 
+                        audioContext.currentTime + 0.1
                     );
                     
-                    // Update delay with smooth ramping
-                    const delayAmount = synthParams.delay * 0.3 + 0.001;
+                    // Update delay
                     delayGain.gain.exponentialRampToValueAtTime(
-                        delayAmount, 
-                        currentTime + rampTime
+                        synthParams.delay * 0.5 + 0.001, 
+                        audioContext.currentTime + 0.1
                     );
                     
-                    // Update reverb with smooth ramping
-                    const reverbAmount = synthParams.reverb * 0.6 + 0.001;
+                    // Update reverb
                     reverbNode.gain.exponentialRampToValueAtTime(
-                        reverbAmount, 
-                        currentTime + rampTime
+                        synthParams.reverb * 0.8 + 0.001, 
+                        audioContext.currentTime + 0.1
                     );
                     
-                    // Update distortion with better curve management
-                    if (synthParams.distortion > 0.02) {
-                        const curve = createDistortionCurve(synthParams.distortion);
-                        if (distortionNode.curve !== curve) {
-                            distortionNode.curve = curve;
-                        }
+                    // Update distortion
+                    if (synthParams.distortion > 0.01) {
+                        distortionNode.curve = createDistortionCurve(synthParams.distortion * 100);
                     } else {
-                        if (distortionNode.curve !== null) {
-                            distortionNode.curve = null;
-                        }
+                        distortionNode.curve = null;
                     }
                     
                     // Visual feedback
@@ -994,14 +952,13 @@
             
             // Update visual effects based on audio
             function updateVisualEffects() {
-                // Vinyl spinning speed with smooth animation
+                // Vinyl spinning speed
                 if (vinylRecord && isFlipped) {
-                    const rpm = currentSpeed * 33.33;
-                    const duration = Math.max(0.1, 60 / rpm);
-                    vinylRecord.style.animationDuration = `${duration}s`;
+                    const rpm = currentSpeed * 33.33; // 33.33 RPM base speed
+                    vinylRecord.style.animationDuration = `${60 / rpm}s`;
                     
-                    // Background distortion effect with threshold
-                    if (synthParams.distortion > 0.4) {
+                    // Background distortion effect
+                    if (synthParams.distortion > 0.3) {
                         bigLogoBg.classList.add('distorted');
                     } else {
                         bigLogoBg.classList.remove('distorted');
@@ -1032,7 +989,7 @@
             const offCanvas = document.createElement('canvas');
             const offCtx = offCanvas.getContext('2d');
 
-            // Enhanced mouse tracking with improved scratch detection
+            // Śledzenie ruchu myszy z efektami scratching
             document.addEventListener('mousemove', (e) => {
                 lastMouseX = mouseX;
                 lastMouseY = mouseY;
@@ -1042,7 +999,7 @@
                 const now = Date.now();
                 const timeDelta = now - lastMouseUpdate;
                 
-                if (timeDelta > 10) { // Higher frequency updates
+                if (timeDelta > 16) { // ~60fps
                     const distance = Math.sqrt(
                         Math.pow(mouseX - lastMouseX, 2) + 
                         Math.pow(mouseY - lastMouseY, 2)
@@ -1050,25 +1007,22 @@
                     const currentSpeedCalc = distance / timeDelta * 16;
                     
                     speedHistory.push(currentSpeedCalc);
-                    if (speedHistory.length > 8) { // Larger history for better smoothing
+                    if (speedHistory.length > 5) {
                         speedHistory.shift();
                     }
                     
                     mouseSpeed = speedHistory.reduce((a, b) => a + b, 0) / speedHistory.length;
                     
-                    // Enhanced scratching effect with better control
+                    // Scratching effect - rapid mouse movements affect playback
                     if (isFlipped && permissionGranted && !audio.paused) {
-                        if (mouseSpeed > 12) {
-                            // Calculate scratch intensity based on speed and direction
-                            const directionX = mouseX - lastMouseX;
-                            const scratchMultiplier = Math.sin(Date.now() * 0.02) * 0.05; // Smaller variations
-                            targetScratchIntensity = scratchMultiplier * Math.min(1, mouseSpeed / 20);
+                        if (mouseSpeed > 15) {
+                            // Quick scratching
+                            const scratchEffect = 1.0 + Math.sin(Date.now() * 0.01) * 0.1;
+                            targetSpeed = synthParams.speed * scratchEffect;
                         } else {
-                            targetScratchIntensity = 0;
+                            // Normal playback
+                            targetSpeed = synthParams.speed;
                         }
-                        
-                        // Update target speed more smoothly
-                        targetSpeed = synthParams.speed;
                     }
                     
                     lastMouseUpdate = now;
@@ -1106,7 +1060,7 @@
                         if (!isDragging) return;
                         
                         const deltaY = startY - e.clientY; // Inverted for natural feel
-                        const sensitivity = 0.004; // Slightly reduced for better control
+                        const sensitivity = 0.005;
                         const newValue = startValue + deltaY * sensitivity;
                         
                         updateKnob(newValue);
@@ -1128,7 +1082,7 @@
                         if (!isDragging) return;
                         
                         const deltaY = startY - e.touches[0].clientY;
-                        const sensitivity = 0.004;
+                        const sensitivity = 0.005;
                         const newValue = startValue + deltaY * sensitivity;
                         
                         updateKnob(newValue);
@@ -1141,7 +1095,7 @@
                 });
             }
 
-            // Initialize turntable sliders with improved responsiveness
+            // Initialize turntable sliders
             function initTurntableControls() {
                 // Speed slider
                 let speedDragging = false;
@@ -1158,7 +1112,7 @@
                     const position = Math.max(0, Math.min(80, clientX - rect.left));
                     speedThumb.style.left = `${position - 6}px`;
                     
-                    // Map to speed range (0.5x to 2x) with smooth curve
+                    // Map to speed range (0.5x to 2x)
                     const normalizedPos = position / 80;
                     synthParams.speed = 0.5 + normalizedPos * 1.5;
                     targetSpeed = synthParams.speed;
@@ -1300,51 +1254,50 @@
                 particle.style.color = brightness > 128 ? '#000' : '#fff';
 
                 // Add glow effect based on audio intensity
-                const glowIntensity = Math.min(1, smoothedMouseSpeed * 0.08 + synthParams.distortion);
-                particle.style.textShadow = `0 0 ${8 + glowIntensity * 15}px currentColor`;
+                const glowIntensity = Math.min(1, mouseSpeed * 0.1 + synthParams.distortion);
+                particle.style.textShadow = `0 0 ${10 + glowIntensity * 20}px currentColor`;
 
                 musicParticles.appendChild(particle);
                 
-                // Enhanced particle movement with smoother audio responsiveness
+                // Enhanced particle movement with audio responsiveness
                 const targetX = mouseX + (Math.random() - 0.5) * 100;
                 const targetY = mouseY + (Math.random() - 0.5) * 100;
                 
                 const deltaX = targetX - startX;
                 const deltaY = targetY - startY;
                 
-                // Speed based on audio parameters with smoothing
-                const baseSpeed = 800 + currentSpeed * 400;
-                const speedVariation = synthParams.filter * 300 + synthParams.delay * 200;
-                const duration = baseSpeed + speedVariation + Math.random() * 300;
+                // Speed based on audio parameters
+                const baseSpeed = 1000 + currentSpeed * 500;
+                const speedVariation = synthParams.filter * 500 + synthParams.delay * 300;
+                const duration = baseSpeed + speedVariation + Math.random() * 500;
                 
-                // Enhanced spiral with smoother audio modulation
-                const spiralRadius = 15 + synthParams.reverb * 25;
-                const rotations = 0.8 + synthParams.filter * 1.5;
+                // Enhanced spiral with audio modulation
+                const spiralRadius = 20 + synthParams.reverb * 40;
+                const rotations = 1 + synthParams.filter * 2;
                 
                 const keyframes = [];
-                const steps = 30; // Reduced for better performance
+                const steps = 40;
                 
                 for (let i = 0; i <= steps; i++) {
                     const progress = i / steps;
                     const easeProgress = 1 - Math.pow(1 - progress, 2);
                     
-                    // Smoother audio-modulated spiral
+                    // Audio-modulated spiral
                     const angle = rotations * 2 * Math.PI * progress;
-                    const currentRadius = spiralRadius * (1 - progress * 0.7) * 
-                        (1 + Math.sin(progress * Math.PI * 3) * synthParams.distortion * 0.2);
+                    const currentRadius = spiralRadius * (1 - progress * 0.8) * (1 + Math.sin(progress * Math.PI * 4) * synthParams.distortion * 0.3);
                     
-                    const spiralX = Math.cos(angle + currentSpeed * progress * Math.PI * 0.5) * currentRadius;
-                    const spiralY = Math.sin(angle + currentSpeed * progress * Math.PI * 0.5) * currentRadius;
+                    const spiralX = Math.cos(angle + currentSpeed * progress * Math.PI) * currentRadius;
+                    const spiralY = Math.sin(angle + currentSpeed * progress * Math.PI) * currentRadius;
                     
                     const mainX = deltaX * easeProgress;
                     const mainY = deltaY * easeProgress;
                     
-                    const rotation = angle * 180 / Math.PI + synthParams.pitch * progress * 5;
-                    const scale = 1 + synthParams.reverb * Math.sin(progress * Math.PI) * 0.3;
+                    const rotation = angle * 180 / Math.PI + synthParams.pitch * progress * 10;
+                    const scale = 1 + synthParams.reverb * Math.sin(progress * Math.PI) * 0.5;
                     
                     keyframes.push({
                         transform: `translate(${mainX + spiralX}px, ${mainY + spiralY}px) rotate(${rotation}deg) scale(${scale})`,
-                        opacity: Math.max(0, 1 - progress * 0.4),
+                        opacity: 1 - progress * 0.3,
                         offset: progress
                     });
                 }
@@ -1364,18 +1317,18 @@
             function startMusicParticles() {
                 stopMusicParticles();
                 
-                // Base particle generation with dynamic timing
+                // Base particle generation
                 particleInterval = setInterval(() => {
                     createMusicParticle();
-                }, Math.max(60, 120 - synthParams.reverb * 40));
+                }, 100 - synthParams.reverb * 60); // Faster with more reverb
                 
-                // Extra particles based on audio activity with smoother control
+                // Extra particles based on audio activity
                 extraParticleInterval = setInterval(() => {
-                    const extraChance = 0.2 + smoothedMouseSpeed * 0.03 + synthParams.distortion * 0.3;
+                    const extraChance = 0.3 + mouseSpeed * 0.05 + synthParams.distortion * 0.4;
                     if (Math.random() < extraChance) {
                         createMusicParticle();
                     }
-                }, 80);
+                }, 60);
             }
 
             function stopMusicParticles() {
@@ -1397,7 +1350,7 @@
                 });
             }
 
-            // Enhanced audio unlock function
+            // Audio unlock function
             function unlockAudio() {
                 if (!permissionGranted) {
                     // Resume AudioContext if suspended
@@ -1580,7 +1533,7 @@
                 vinylRecord.classList.add('spinning');
                 vinylNeedle.classList.add('active');
                 
-                // Enhanced audio playing with better error handling
+                // Enhanced audio playing with multiple fallbacks
                 const playAudio = () => {
                     // Resume AudioContext if needed
                     if (audioContext && audioContext.state === 'suspended') {
@@ -1595,8 +1548,8 @@
                             
                             // Smooth fade in
                             if (gainNode) {
-                                gainNode.gain.setValueAtTime(0.001, audioContext.currentTime);
-                                gainNode.gain.exponentialRampToValueAtTime(1.0, audioContext.currentTime + 1.2);
+                                gainNode.gain.setValueAtTime(0.01, audioContext.currentTime);
+                                gainNode.gain.linearRampToValueAtTime(1.0, audioContext.currentTime + 0.8);
                             }
                         }).catch(err => {
                             console.log('Audio play failed:', err);
@@ -1641,16 +1594,11 @@
                 
                 // Smooth fade out and stop
                 if (gainNode && audioContext) {
-                    gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.8);
+                    gainNode.gain.linearRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
                     setTimeout(() => {
                         audio.pause();
                         audio.playbackRate = 1.0;
-                        // Reset parameters
-                        targetSpeed = 1.0;
-                        currentSpeed = 1.0;
-                        targetScratchIntensity = 0;
-                        scratchIntensity = 0;
-                    }, 800);
+                    }, 500);
                 } else {
                     audio.pause();
                     audio.playbackRate = 1.0;
