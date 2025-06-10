@@ -425,7 +425,7 @@
 
                 <div class="buttons-container" id="buttonsContainer">
                     <button class="btn" onclick="handleButtonClick('archive')">Archive</button>
-                    <button class="btn" onclick="handleButtonClick('info')">Info</button>
+                    <button class="btn" onclick="handleButtonClick('latest')">Latest</button>
                     <button class="btn" onclick="handleButtonClick('about')">About</button>
                 </div>
             </div>
@@ -979,10 +979,10 @@
             window.handleButtonClick = function(action) {
                 switch(action) {
                     case 'archive':
-                        alert('Otwieranie archiwum...');
+                        window.open('https://radiokapital.pl/search/?s=klub%20zaproszenie', '_blank');
                         break;
-                    case 'info':
-                        alert('Wyświetlanie informacji...');
+                    case 'latest':
+                        window.open('https://www.instagram.com/klub_zaproszenie/', '_blank');
                         break;
                     case 'about':
                         alert('O aplikacji...');
