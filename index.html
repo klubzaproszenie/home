@@ -399,16 +399,9 @@
         <img id="armCursor" src="arm.png" alt="Arm Cursor">
     </div>
 
-    <!-- Ellipse mask for transition -->
-    <svg class="ellipse-mask" id="ellipseMask" style="display: none;">
-        <defs>
-            <mask id="ellipse-mask">
-                <rect width="100%" height="100%" fill="white"/>
-                <ellipse id="maskEllipse" cx="50%" cy="50%" rx="0" ry="0" fill="black"/>
-            </mask>
-        </defs>
-        <rect width="100%" height="100%" fill="black" mask="url(#ellipse-mask)"/>
-    </svg>
+    <!-- Venetian Blinds transition -->
+    <div id="venetianBlinds" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; pointer-events: none;">
+    </div>
 
     <!-- Main Content -->
     <div id="mainContent">
@@ -454,8 +447,7 @@
         const ctx = drawingCanvas.getContext('2d');
         const allowSoundContainer = document.getElementById('allowSoundContainer');
         const mainContent = document.getElementById('mainContent');
-        const ellipseMask = document.getElementById('ellipseMask');
-        const maskEllipse = document.getElementById('maskEllipse');
+        const venetianBlinds = document.getElementById('venetianBlinds');
 
         let isDrawing = false;
         let hasDrawn = false;
@@ -495,8 +487,6 @@
                 ctx.lineWidth = 30;
                 ctx.lineCap = 'round';
                 ctx.lineJoin = 'round';
-                ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-                ctx.shadowBlur = 5;
             }
         }
 
@@ -561,37 +551,53 @@
             // Hide arm cursor
             armCursor.style.display = 'none';
             
-            // Start ellipse mask animation
-            ellipseMask.style.display = 'block';
+            // Create venetian blinds
+            venetianBlinds.style.display = 'block';
+            const numBlinds = 10;
+            const blindHeight = 100 / numBlinds;
             
-            let radius = 0;
-            const maxRadius = Math.max(window.innerWidth, window.innerHeight);
-            const animationDuration = 1500; // 1.5 seconds
-            const startTime = Date.now();
-            
-            function animateEllipse() {
-                const elapsed = Date.now() - startTime;
-                const progress = Math.min(elapsed / animationDuration, 1);
-                
-                // Easing function for smooth animation
-                const easeProgress = 1 - Math.pow(1 - progress, 3);
-                radius = maxRadius * easeProgress;
-                
-                maskEllipse.setAttribute('rx', radius);
-                maskEllipse.setAttribute('ry', radius);
-                
-                if (progress < 1) {
-                    requestAnimationFrame(animateEllipse);
-                } else {
-                    // Animation complete
-                    banner.style.display = 'none';
-                    ellipseMask.style.display = 'none';
-                    mainContent.classList.add('visible');
-                    initMainPage();
-                }
+            // Create blind strips
+            for (let i = 0; i < numBlinds; i++) {
+                const blind = document.createElement('div');
+                blind.style.position = 'absolute';
+                blind.style.left = '0';
+                blind.style.top = (i * blindHeight) + '%';
+                blind.style.width = '100%';
+                blind.style.height = blindHeight + '%';
+                blind.style.background = '#000';
+                blind.style.transformOrigin = 'top';
+                blind.style.transform = 'scaleY(0)';
+                venetianBlinds.appendChild(blind);
             }
             
-            requestAnimationFrame(animateEllipse);
+            // Animate blinds closing
+            const blinds = venetianBlinds.querySelectorAll('div');
+            blinds.forEach((blind, index) => {
+                setTimeout(() => {
+                    blind.style.transition = 'transform 0.3s ease-out';
+                    blind.style.transform = 'scaleY(1)';
+                }, index * 50);
+            });
+            
+            // After blinds close, prepare main content
+            setTimeout(() => {
+                banner.style.display = 'none';
+                mainContent.classList.add('visible');
+                
+                // Open blinds
+                blinds.forEach((blind, index) => {
+                    setTimeout(() => {
+                        blind.style.transform = 'scaleY(0)';
+                    }, index * 50);
+                });
+                
+                // Remove blinds after animation
+                setTimeout(() => {
+                    venetianBlinds.style.display = 'none';
+                    venetianBlinds.innerHTML = '';
+                    initMainPage();
+                }, numBlinds * 50 + 300);
+            }, numBlinds * 50 + 500);
         }
 
         // Initialize main page functionality
@@ -733,6 +739,7 @@
 
                 musicParticles.appendChild(particle);
                 
+                // Boid-like behavior with whirlpool motion
                 const targetX = mouseX + (Math.random() - 0.5) * 100;
                 const targetY = mouseY + (Math.random() - 0.5) * 100;
                 
@@ -740,34 +747,63 @@
                 const deltaY = targetY - startY;
                 const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
                 
+                // More irregular parameters
                 const speedInfluence = Math.min(mouseSpeed / 10, 2);
-                const spiralIntensity = 1.5 + speedInfluence;
-                const spiralRadius = Math.min(100, distance * 0.3 + speedInfluence * 20);
-                const rotations = 2 + Math.random() * 2 + speedInfluence;
+                const irregularity = Math.random() * 2 + 0.5; // Random multiplier for irregularity
+                const spiralIntensity = (1.5 + speedInfluence) * irregularity;
+                const spiralRadius = Math.min(150, distance * 0.4 + speedInfluence * 30) * irregularity;
+                const rotations = (1.5 + Math.random() * 3 + speedInfluence) * irregularity;
                 
-                const baseSpeed = Math.max(800, Math.min(2000, distance * 1.5));
-                const duration = baseSpeed / (1 + speedInfluence * 0.5);
+                // Varying speeds for boid-like behavior
+                const baseSpeed = Math.max(1000, Math.min(3000, distance * 2));
+                const speedVariation = 0.5 + Math.random(); // 50% to 150% speed
+                const duration = (baseSpeed / (1 + speedInfluence * 0.5)) * speedVariation;
                 
                 const keyframes = [];
-                const steps = 30;
+                const steps = 40; // More steps for complex motion
+                
+                // Add random "flutter" points for boid-like behavior
+                const flutterPoints = Math.floor(Math.random() * 3) + 2;
+                const flutterAngles = [];
+                for (let i = 0; i < flutterPoints; i++) {
+                    flutterAngles.push(Math.random() * Math.PI * 2);
+                }
                 
                 for (let i = 0; i <= steps; i++) {
                     const progress = i / steps;
                     const angle = rotations * 2 * Math.PI * progress;
-                    const radius = spiralRadius * (1 - progress * 0.7);
                     
-                    const chaosMultiplier = 1 + mouseSpeed / 20;
-                    const spiralX = Math.cos(angle) * radius * chaosMultiplier;
-                    const spiralY = Math.sin(angle) * radius * chaosMultiplier;
+                    // Irregular radius changes
+                    const radiusNoise = Math.sin(progress * Math.PI * 4) * 0.3 + 1;
+                    const currentRadius = spiralRadius * (1 - progress * 0.6) * radiusNoise;
                     
-                    const mainX = deltaX * progress;
-                    const mainY = deltaY * progress;
+                    // Add flutter motion
+                    let flutterX = 0, flutterY = 0;
+                    flutterAngles.forEach((flutterAngle, idx) => {
+                        const flutterStrength = Math.sin(progress * Math.PI * (idx + 2)) * 20;
+                        flutterX += Math.cos(flutterAngle + progress * Math.PI * 2) * flutterStrength;
+                        flutterY += Math.sin(flutterAngle + progress * Math.PI * 2) * flutterStrength;
+                    });
                     
-                    const chaosFactor = mouseSpeed > 10 ? (Math.random() - 0.5) * mouseSpeed : 0;
+                    // Whirlpool with chaos
+                    const chaosMultiplier = 1 + mouseSpeed / 15 + Math.random() * 0.5;
+                    const spiralX = (Math.cos(angle) * currentRadius + flutterX) * chaosMultiplier;
+                    const spiralY = (Math.sin(angle) * currentRadius + flutterY) * chaosMultiplier;
+                    
+                    // Main movement with some randomness
+                    const progressEase = Math.pow(progress, 0.8); // Non-linear progress
+                    const mainX = deltaX * progressEase + (Math.random() - 0.5) * 10;
+                    const mainY = deltaY * progressEase + (Math.random() - 0.5) * 10;
+                    
+                    // Additional chaos for fast mouse movement
+                    const chaosFactor = mouseSpeed > 10 ? (Math.random() - 0.5) * mouseSpeed * 1.5 : 0;
+                    
+                    // Scale changes for depth effect
+                    const scale = 1 + speedInfluence * 0.3 + Math.sin(progress * Math.PI * 3) * 0.2;
                     
                     keyframes.push({
-                        transform: `translate(${mainX + spiralX + chaosFactor}px, ${mainY + spiralY + chaosFactor}px) rotate(${angle * 180 / Math.PI}deg) scale(${1 + speedInfluence * 0.2})`,
-                        opacity: 1,
+                        transform: `translate(${mainX + spiralX + chaosFactor}px, ${mainY + spiralY + chaosFactor}px) rotate(${angle * 180 / Math.PI + Math.random() * 360}deg) scale(${scale})`,
+                        opacity: 1 - progress * 0.3, // Gradual fade
                         offset: progress
                     });
                 }
@@ -776,7 +812,7 @@
                 
                 particle.animate(keyframes, {
                     duration: duration,
-                    easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+                    easing: 'linear' // Linear for more natural boid motion
                 });
                 
                 setTimeout(() => {
@@ -844,7 +880,7 @@
                 clearTimeout(hintTimeout);
                 hideSwipeHint();
                 if (!isFlipped) {
-                    hintTimeout = setTimeout(showSwipeHint, 7000);
+                    hintTimeout = setTimeout(showSwipeHint, 3000);
                 }
             }
 
