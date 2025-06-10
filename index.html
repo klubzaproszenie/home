@@ -482,6 +482,19 @@
                 ctx.lineWidth = 30;
                 ctx.lineCap = 'round';
                 ctx.lineJoin = 'round';
+                
+                // Unlock audio on drawing (especially important for mobile)
+                if (!audioPermissionGranted) {
+                    const tempAudio = new Audio('muza.mp3');
+                    tempAudio.volume = 0.1;
+                    tempAudio.play().then(() => {
+                        tempAudio.pause();
+                        audioPermissionGranted = true;
+                        console.log('Audio unlocked via banner');
+                    }).catch(() => {
+                        console.log('Audio unlock attempt failed');
+                    });
+                }
             }
         }
 
@@ -597,6 +610,14 @@
             const audio = new Audio('muza.mp3');
             audio.loop = true;
             audio.preservesPitch = false;
+            
+            // Create and resume AudioContext for better mobile support
+            let audioContext;
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            } catch (e) {
+                console.log('Web Audio API not supported');
+            }
 
             const page1 = document.getElementById('page1');
             const musicParticles = document.getElementById('musicParticles');
@@ -798,16 +819,37 @@
                 });
             }
 
-            book.addEventListener('click', () => {
+            // Audio unlock function
+            function unlockAudio() {
                 if (!permissionGranted) {
-                    audio.play().then(() => {
-                        audio.pause();
-                        permissionGranted = true;
-                    }).catch(() => {
-                        console.log('Audio autoplay blocked');
-                    });
+                    // Resume AudioContext if suspended
+                    if (audioContext && audioContext.state === 'suspended') {
+                        audioContext.resume();
+                    }
+                    
+                    // Try to play and immediately pause to unlock
+                    const playPromise = audio.play();
+                    if (playPromise !== undefined) {
+                        playPromise.then(() => {
+                            audio.pause();
+                            audio.currentTime = 0;
+                            permissionGranted = true;
+                            console.log('Audio unlocked successfully');
+                        }).catch(err => {
+                            console.log('Audio unlock failed:', err);
+                        });
+                    }
                 }
-            }, { once: true });
+            }
+
+            // Try to unlock audio on any user interaction
+            ['click', 'touchstart', 'touchend', 'mousedown'].forEach(eventType => {
+                document.addEventListener(eventType, unlockAudio, { once: true });
+            });
+
+            // Specific unlock when clicking the book
+            book.addEventListener('click', unlockAudio);
+            book.addEventListener('touchstart', unlockAudio);
 
             function showSwipeHint() {
                 if (!isFlipped) {
@@ -939,16 +981,44 @@
                 hideSwipeHint();
                 clearTimeout(hintTimeout);
                 
-                // Always try to play audio when book opens
+                // Enhanced audio playing with multiple fallbacks
                 audio.currentTime = 0;
                 audio.playbackRate = 1.0;
-                audio.play().then(() => {
-                    console.log('Audio playing');
-                }).catch((err) => {
-                    console.log('Audio play failed:', err);
-                    // Try once more after user interaction
-                    permissionGranted = false;
-                });
+                
+                // First attempt
+                const playAudio = () => {
+                    // Resume AudioContext if needed
+                    if (audioContext && audioContext.state === 'suspended') {
+                        audioContext.resume();
+                    }
+                    
+                    const playPromise = audio.play();
+                    if (playPromise !== undefined) {
+                        playPromise.then(() => {
+                            console.log('Audio playing successfully');
+                            permissionGranted = true;
+                        }).catch(err => {
+                            console.log('Audio play failed:', err);
+                            
+                            // If failed, try to unlock on next interaction
+                            if (!permissionGranted) {
+                                const retryPlay = () => {
+                                    audio.play().catch(e => console.log('Retry failed:', e));
+                                    document.removeEventListener('click', retryPlay);
+                                    document.removeEventListener('touchend', retryPlay);
+                                };
+                                document.addEventListener('click', retryPlay, { once: true });
+                                document.addEventListener('touchend', retryPlay, { once: true });
+                            }
+                        });
+                    }
+                };
+                
+                // Try to play immediately
+                playAudio();
+                
+                // Also try after a small delay (helps on some mobile browsers)
+                setTimeout(playAudio, 100);
                 
                 startMusicParticles();
             }
