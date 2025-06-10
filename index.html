@@ -485,12 +485,13 @@
                 
                 // Unlock audio on drawing (especially important for mobile)
                 if (!audioPermissionGranted) {
-                    const tempAudio = new Audio('muza.mp3');
-                    tempAudio.volume = 0.1;
-                    tempAudio.play().then(() => {
-                        tempAudio.pause();
+                    // Create a silent audio to unlock permissions
+                    const silentAudio = new Audio();
+                    silentAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQQAAAAAAAAAAAEA';
+                    silentAudio.play().then(() => {
+                        silentAudio.pause();
                         audioPermissionGranted = true;
-                        console.log('Audio unlocked via banner');
+                        console.log('Audio permissions unlocked via banner');
                     }).catch(() => {
                         console.log('Audio unlock attempt failed');
                     });
@@ -512,19 +513,6 @@
             
             if (!hasDrawn) {
                 hasDrawn = true;
-                
-                // Grant audio permission when user draws
-                if (!audioPermissionGranted) {
-                    // Create a temporary audio element to unlock audio context
-                    const tempAudio = new Audio();
-                    tempAudio.play().then(() => {
-                        tempAudio.pause();
-                        audioPermissionGranted = true;
-                    }).catch(() => {
-                        console.log('Audio permission not granted');
-                    });
-                }
-                
                 setTimeout(startTransition, 500); // Start transition after a short delay
             }
         }
