@@ -9,7 +9,9 @@
             font-family: 'Apple Garamond';
             src: url('fonts/AppleGaramond-Italic.ttf') format('truetype');
             font-style: italic;
-        }
+    </script>
+</body>
+</html>
 
         * {
             margin: 0;
@@ -324,6 +326,26 @@
             opacity: 1;
         }
 
+        /* Audio control indicator */
+        .audio-control-info {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            font-family: 'Apple Garamond', serif;
+            font-size: 18px;
+            color: #fff;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 15px;
+            border-radius: 5px;
+        }
+
+        .audio-control-info.show {
+            opacity: 0.8;
+        }
+
         @media (max-width: 1200px) {
             .pledge-text {
                 font-size: 2.5rem;
@@ -400,6 +422,11 @@
 
     <!-- Main Content -->
     <div id="mainContent">
+        <!-- Audio control info -->
+        <div class="audio-control-info" id="audioControlInfo">
+            Speed: <span id="speedDisplay">1.0x</span> | Delay: <span id="delayDisplay">0ms</span>
+        </div>
+
         <!-- Duże, losowe logo w tle -->
         <img id="bigLogoBg" src="" alt="Duże Logo">
 
@@ -589,11 +616,6 @@
             // Zmienne do śledzenia ruchu kursora
             let mouseX = 0;
             let mouseY = 0;
-            let lastMouseX = 0;
-            let lastMouseY = 0;
-            let mouseSpeed = 0;
-            let speedHistory = [];
-            let lastMouseUpdate = Date.now();
 
             const audio = new Audio('muza.mp3');
             audio.loop = true;
@@ -603,11 +625,22 @@
             let source;
             let gainNode;
             let analyser;
+            let delayNode;
+            let feedbackGain;
+            let wetGain;
+            let dryGain;
             
             // Smoothing variables
             let targetPlaybackRate = 1.0;
             let currentPlaybackRate = 1.0;
+            let targetDelayTime = 0;
+            let currentDelayTime = 0;
             const smoothingFactor = 0.05; // How quickly to interpolate
+            
+            // Audio control display elements
+            const audioControlInfo = document.getElementById('audioControlInfo');
+            const speedDisplay = document.getElementById('speedDisplay');
+            const delayDisplay = document.getElementById('delayDisplay');
             
             try {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -617,8 +650,32 @@
                 gainNode = audioContext.createGain();
                 analyser = audioContext.createAnalyser();
                 
-                // Connect nodes
-                source.connect(gainNode);
+                // Create delay effect chain
+                delayNode = audioContext.createDelay(3.0); // Max 3 seconds delay
+                feedbackGain = audioContext.createGain();
+                wetGain = audioContext.createGain();
+                dryGain = audioContext.createGain();
+                
+                // Set initial values
+                delayNode.delayTime.value = 0;
+                feedbackGain.gain.value = 0.4; // Feedback amount (0-1)
+                wetGain.gain.value = 0.3; // Wet signal level
+                dryGain.gain.value = 1.0; // Dry signal level
+                
+                // Connect nodes for delay effect
+                // Dry path: source -> dryGain -> gainNode
+                source.connect(dryGain);
+                dryGain.connect(gainNode);
+                
+                // Wet path: source -> delayNode -> feedbackGain -> delayNode (feedback loop)
+                //                                -> wetGain -> gainNode
+                source.connect(delayNode);
+                delayNode.connect(feedbackGain);
+                feedbackGain.connect(delayNode); // Feedback loop
+                delayNode.connect(wetGain);
+                wetGain.connect(gainNode);
+                
+                // Final output chain
                 gainNode.connect(analyser);
                 analyser.connect(audioContext.destination);
                 
@@ -631,13 +688,27 @@
             // Smooth audio update loop
             function updateAudioSmooth() {
                 if (isFlipped && !audio.paused) {
-                    // Smooth interpolation
+                    // Smooth interpolation for playback rate
                     currentPlaybackRate += (targetPlaybackRate - currentPlaybackRate) * smoothingFactor;
                     
                     // Apply the smoothed playback rate
                     if (Math.abs(currentPlaybackRate - audio.playbackRate) > 0.01) {
                         audio.playbackRate = currentPlaybackRate;
                     }
+                    
+                    // Smooth interpolation for delay time
+                    if (delayNode) {
+                        currentDelayTime += (targetDelayTime - currentDelayTime) * smoothingFactor;
+                        
+                        // Apply the smoothed delay time
+                        if (Math.abs(currentDelayTime - delayNode.delayTime.value) > 0.001) {
+                            delayNode.delayTime.setValueAtTime(currentDelayTime, audioContext.currentTime);
+                        }
+                    }
+                    
+                    // Update display
+                    speedDisplay.textContent = currentPlaybackRate.toFixed(2) + 'x';
+                    delayDisplay.textContent = Math.round(currentDelayTime * 1000) + 'ms';
                 }
                 
                 requestAnimationFrame(updateAudioSmooth);
@@ -656,37 +727,26 @@
             const offCanvas = document.createElement('canvas');
             const offCtx = offCanvas.getContext('2d');
 
-            // Śledzenie ruchu myszy
+            // Śledzenie ruchu myszy - updated for position-based control
             document.addEventListener('mousemove', (e) => {
-                lastMouseX = mouseX;
-                lastMouseY = mouseY;
                 mouseX = e.clientX;
                 mouseY = e.clientY;
                 
-                const now = Date.now();
-                const timeDelta = now - lastMouseUpdate;
-                
-                if (timeDelta > 16) { // ~60fps
-                    const distance = Math.sqrt(
-                        Math.pow(mouseX - lastMouseX, 2) + 
-                        Math.pow(mouseY - lastMouseY, 2)
-                    );
-                    const currentSpeed = distance / timeDelta * 16;
+                if (isFlipped && permissionGranted && !audio.paused) {
+                    // Y-axis controls playback speed (0.5x to 2.0x)
+                    // Top of screen = 2.0x, Bottom = 0.5x
+                    const yRatio = mouseY / window.innerHeight;
+                    targetPlaybackRate = 2.0 - (yRatio * 1.5); // 2.0 at top, 0.5 at bottom
+                    targetPlaybackRate = Math.max(0.5, Math.min(2.0, targetPlaybackRate));
                     
-                    speedHistory.push(currentSpeed);
-                    if (speedHistory.length > 10) {
-                        speedHistory.shift();
-                    }
+                    // X-axis controls delay time (0ms to 3000ms)
+                    // Left side = 0ms, Right side = 3000ms
+                    const xRatio = mouseX / window.innerWidth;
+                    targetDelayTime = xRatio * 3.0; // 0 to 3 seconds
+                    targetDelayTime = Math.max(0, Math.min(3.0, targetDelayTime));
                     
-                    mouseSpeed = speedHistory.reduce((a, b) => a + b, 0) / speedHistory.length;
-                    
-                    if (isFlipped && permissionGranted && !audio.paused) {
-                        const basePlaybackRate = 1.0;
-                        const speedMultiplier = Math.max(0.5, Math.min(2.0, 1.0 + (mouseSpeed - 5) * 0.1));
-                        audio.playbackRate = basePlaybackRate * speedMultiplier;
-                    }
-                    
-                    lastMouseUpdate = now;
+                    // Show control info when audio is playing
+                    audioControlInfo.classList.add('show');
                 }
             });
 
@@ -1009,6 +1069,8 @@
                 // Reset audio parameters for smooth start
                 targetPlaybackRate = 1.0;
                 currentPlaybackRate = 1.0;
+                targetDelayTime = 0;
+                currentDelayTime = 0;
                 audio.preservesPitch = false;
                 audio.currentTime = 0;
                 
@@ -1030,6 +1092,9 @@
                                 gainNode.gain.setValueAtTime(0.01, audioContext.currentTime);
                                 gainNode.gain.linearRampToValueAtTime(1.0, audioContext.currentTime + 0.5);
                             }
+                            
+                            // Show audio control info
+                            audioControlInfo.classList.add('show');
                         }).catch(err => {
                             console.log('Audio play failed:', err);
                             
@@ -1065,8 +1130,14 @@
                 
                 resetHintTimer();
                 
+                // Hide audio control info
+                audioControlInfo.classList.remove('show');
+                
                 audio.pause();
                 audio.playbackRate = 1.0;
+                if (delayNode) {
+                    delayNode.delayTime.value = 0;
+                }
                 stopMusicParticles();
             }
 
@@ -1093,6 +1164,3 @@
                 }
             }
         }
-    </script>
-</body>
-</html>
