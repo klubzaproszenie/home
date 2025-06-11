@@ -127,26 +127,6 @@
             opacity: 1;
         }
 
-        /* Audio control indicator */
-        .audio-control-info {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            font-family: 'Apple Garamond', serif;
-            font-size: 18px;
-            color: #fff;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            z-index: 10;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 10px 15px;
-            border-radius: 5px;
-        }
-
-        .audio-control-info.show {
-            opacity: 0.8;
-        }
-
         /* Ellipse mask for transition */
         .ellipse-mask {
             position: fixed;
@@ -420,11 +400,6 @@
 
     <!-- Main Content -->
     <div id="mainContent">
-        <!-- Audio control info -->
-        <div class="audio-control-info" id="audioControlInfo">
-            Speed: <span id="speedDisplay">1.0x</span> | Delay: <span id="delayDisplay">0ms</span>
-        </div>
-
         <!-- Duże, losowe logo w tle -->
         <img id="bigLogoBg" src="" alt="Duże Logo">
 
@@ -611,9 +586,9 @@
             let permissionGranted = audioPermissionGranted;
             let hintTimeout;
 
-            // Zmienne do śledzenia ruchu kursora
-            let mouseX = 0;
-            let mouseY = 0;
+            // Zmienne do śledzenia ruchu kursora/dotyku
+            let currentX = 0;
+            let currentY = 0;
 
             const audio = new Audio('muza.wav');
             audio.loop = true;
@@ -634,11 +609,6 @@
             let targetDelayTime = 0;
             let currentDelayTime = 0;
             const smoothingFactor = 0.05; // How quickly to interpolate
-            
-            // Audio control display elements
-            const audioControlInfo = document.getElementById('audioControlInfo');
-            const speedDisplay = document.getElementById('speedDisplay');
-            const delayDisplay = document.getElementById('delayDisplay');
             
             try {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -703,10 +673,6 @@
                             delayNode.delayTime.setValueAtTime(currentDelayTime, audioContext.currentTime);
                         }
                     }
-                    
-                    // Update display
-                    speedDisplay.textContent = currentPlaybackRate.toFixed(2) + 'x';
-                    delayDisplay.textContent = Math.round(currentDelayTime * 1000) + 'ms';
                 }
                 
                 requestAnimationFrame(updateAudioSmooth);
@@ -725,28 +691,44 @@
             const offCanvas = document.createElement('canvas');
             const offCtx = offCanvas.getContext('2d');
 
-            // Śledzenie ruchu myszy - updated for position-based control
-            document.addEventListener('mousemove', (e) => {
-                mouseX = e.clientX;
-                mouseY = e.clientY;
+            // Update position function for both mouse and touch
+            function updatePosition(clientX, clientY) {
+                currentX = clientX;
+                currentY = clientY;
                 
                 if (isFlipped && permissionGranted && !audio.paused) {
                     // Y-axis controls playback speed (0.5x to 2.0x)
                     // Top of screen = 2.0x, Bottom = 0.5x
-                    const yRatio = mouseY / window.innerHeight;
+                    const yRatio = currentY / window.innerHeight;
                     targetPlaybackRate = 2.0 - (yRatio * 1.5); // 2.0 at top, 0.5 at bottom
                     targetPlaybackRate = Math.max(0.5, Math.min(2.0, targetPlaybackRate));
                     
                     // X-axis controls delay time (0ms to 3000ms)
                     // Left side = 0ms, Right side = 3000ms
-                    const xRatio = mouseX / window.innerWidth;
+                    const xRatio = currentX / window.innerWidth;
                     targetDelayTime = xRatio * 3.0; // 0 to 3 seconds
                     targetDelayTime = Math.max(0, Math.min(3.0, targetDelayTime));
-                    
-                    // Show control info when audio is playing
-                    audioControlInfo.classList.add('show');
                 }
+            }
+
+            // Mouse tracking
+            document.addEventListener('mousemove', (e) => {
+                updatePosition(e.clientX, e.clientY);
             });
+
+            // Touch tracking for mobile
+            document.addEventListener('touchmove', (e) => {
+                if (e.touches.length > 0) {
+                    updatePosition(e.touches[0].clientX, e.touches[0].clientY);
+                }
+            }, { passive: true });
+
+            // Also track initial touch position
+            document.addEventListener('touchstart', (e) => {
+                if (e.touches.length > 0) {
+                    updatePosition(e.touches[0].clientX, e.touches[0].clientY);
+                }
+            }, { passive: true });
 
             function resizeCanvas() {
                 offCanvas.width = window.innerWidth;
@@ -814,9 +796,9 @@
 
                 musicParticles.appendChild(particle);
                 
-                // Calmer trajectory to cursor
-                const targetX = mouseX;
-                const targetY = mouseY;
+                // Use current position (mouse or touch) as target
+                const targetX = currentX;
+                const targetY = currentY;
                 
                 const deltaX = targetX - startX;
                 const deltaY = targetY - startY;
@@ -843,7 +825,7 @@
                     const spiralX = Math.cos(angle) * currentRadius;
                     const spiralY = Math.sin(angle) * currentRadius;
                     
-                    // Smooth movement toward cursor
+                    // Smooth movement toward cursor/touch
                     const mainX = deltaX * easeProgress;
                     const mainY = deltaY * easeProgress;
                     
@@ -1090,9 +1072,6 @@
                                 gainNode.gain.setValueAtTime(0.01, audioContext.currentTime);
                                 gainNode.gain.linearRampToValueAtTime(1.0, audioContext.currentTime + 0.5);
                             }
-                            
-                            // Show audio control info
-                            audioControlInfo.classList.add('show');
                         }).catch(err => {
                             console.log('Audio play failed:', err);
                             
@@ -1127,9 +1106,6 @@
                 page1.style.zIndex = '3';
                 
                 resetHintTimer();
-                
-                // Hide audio control info
-                audioControlInfo.classList.remove('show');
                 
                 audio.pause();
                 audio.playbackRate = 1.0;
