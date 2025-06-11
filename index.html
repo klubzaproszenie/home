@@ -1,1166 +1,213 @@
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Klub Zaproszenie</title>
-    <style>
-        @font-face {
-            font-family: 'Apple Garamond';
-            src: url('fonts/AppleGaramond-Italic.ttf') format('truetype');
-            font-style: italic;
-    </script>
-</body>
-</html>
+// Replace the mouse tracking section in initMainPage() with this updated code:
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+// Zmienne do śledzenia ruchu kursora
+let mouseX = 0;
+let mouseY = 0;
 
-        /* Banner Styles */
-        #banner {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #000;
-            z-index: 10000;
-            overflow: hidden;
-            transition: opacity 0.3s ease;
-        }
+const audio = new Audio('muza.mp3');
+audio.loop = true;
 
-        #banner.hiding {
-            pointer-events: none;
-        }
+// Create AudioContext and nodes for smooth audio control
+let audioContext;
+let source;
+let gainNode;
+let analyser;
+let delayNode;
+let feedbackGain;
+let wetGain;
+let dryGain;
 
-        .banner-container {
-            display: flex;
-            width: 100%;
-            height: 100%;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 5%;
-        }
+// Smoothing variables
+let targetPlaybackRate = 1.0;
+let currentPlaybackRate = 1.0;
+let targetDelayTime = 0;
+let currentDelayTime = 0;
+const smoothingFactor = 0.05; // How quickly to interpolate
 
-        .banner-left {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: relative;
-        }
+// Audio control display elements
+const audioControlInfo = document.getElementById('audioControlInfo');
+const speedDisplay = document.getElementById('speedDisplay');
+const delayDisplay = document.getElementById('delayDisplay');
 
-        .banner-right {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-        }
+try {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    
+    // Create nodes
+    source = audioContext.createMediaElementSource(audio);
+    gainNode = audioContext.createGain();
+    analyser = audioContext.createAnalyser();
+    
+    // Create delay effect chain
+    delayNode = audioContext.createDelay(3.0); // Max 3 seconds delay
+    feedbackGain = audioContext.createGain();
+    wetGain = audioContext.createGain();
+    dryGain = audioContext.createGain();
+    
+    // Set initial values
+    delayNode.delayTime.value = 0;
+    feedbackGain.gain.value = 0.4; // Feedback amount (0-1)
+    wetGain.gain.value = 0.3; // Wet signal level
+    dryGain.gain.value = 1.0; // Dry signal level
+    
+    // Connect nodes for delay effect
+    // Dry path: source -> dryGain -> gainNode
+    source.connect(dryGain);
+    dryGain.connect(gainNode);
+    
+    // Wet path: source -> delayNode -> feedbackGain -> delayNode (feedback loop)
+    //                                -> wetGain -> gainNode
+    source.connect(delayNode);
+    delayNode.connect(feedbackGain);
+    feedbackGain.connect(delayNode); // Feedback loop
+    delayNode.connect(wetGain);
+    wetGain.connect(gainNode);
+    
+    // Final output chain
+    gainNode.connect(analyser);
+    analyser.connect(audioContext.destination);
+    
+    // Set initial gain
+    gainNode.gain.value = 1.0;
+} catch (e) {
+    console.log('Web Audio API not supported:', e);
+}
 
-        .pledge-text {
-            font-family: 'Apple Garamond', serif;
-            font-size: 3rem;
-            color: #fff;
-            line-height: 1.4;
-            max-width: 80%;
-        }
-
-        #allowSoundContainer {
-            position: relative;
-            width: 600px;
-            height: 600px;
-            cursor: crosshair;
-        }
-
-        #allowSoundImg {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            position: absolute;
-            top: 0;
-            left: 0;
-            pointer-events: none;
-            z-index: 1;
-        }
-
-        #drawingCanvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            cursor: crosshair;
-            z-index: 2;
-        }
-
-        #armCursor {
-            position: fixed;
-            width: 100px;
-            height: 100px;
-            pointer-events: none;
-            z-index: 10001;
-            transform: translate(-50%, -50%);
-            transition: none;
-        }
-
-        /* Main page styles (unchanged) */
-        html, body {
-            cursor: url('cursor1.png') 16 16, auto;
-            background: #000;
-            overflow: hidden;
-        }
-
-        body {
-            font-family: 'Apple Garamond', serif;
-            min-height: 100vh;
-            user-select: none;
-        }
-
-        #mainContent {
-            opacity: 0;
-            transition: opacity 0.5s ease;
-        }
-
-        #mainContent.visible {
-            opacity: 1;
-        }
-
-        /* Ellipse mask for transition */
-        .ellipse-mask {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 9999;
-        }
-
-        /* Duże losowe logo w tle: obniżone i półprzezroczyste */
-        #bigLogoBg {
-            position: fixed;
-            top: 60%;
-            left: 50%;
-            width: 100vw;
-            height: 100vh;
-            object-fit: cover;
-            transform: translate(-50%, -50%) scale(1.5);
-            transform-origin: center center;
-            opacity: 0.5;
-            z-index: 0;
-        }
-
-        /* Animacja bujania książeczki */
-        @keyframes sway {
-            0%   { transform: rotate(0deg); }
-            25%  { transform: rotate(2deg); }
-            50%  { transform: rotate(0deg); }
-            75%  { transform: rotate(-2deg); }
-            100% { transform: rotate(0deg); }
-        }
-
-        .book-container {
-            position: fixed;
-            bottom: 50px;
-            right: 50px;
-            perspective: 1500px;
-            transform-style: preserve-3d;
-            animation: sway 6s ease-in-out infinite;
-            z-index: 1;
-        }
-
-        .book {
-            width: 22.5vw;
-            height: 30vh;
-            min-width: 300px;
-            min-height: 375px;
-            position: relative;
-            transform-style: preserve-3d;
-            transform: rotateX(5deg);
-            cursor: grab;
-        }
-
-        .book:active {
-            cursor: grabbing;
-        }
-
-        .page {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            border-radius: 15px;
-            transform-style: preserve-3d;
-            backface-visibility: hidden;
-            pointer-events: auto;
+// Smooth audio update loop
+function updateAudioSmooth() {
+    if (isFlipped && !audio.paused) {
+        // Smooth interpolation for playback rate
+        currentPlaybackRate += (targetPlaybackRate - currentPlaybackRate) * smoothingFactor;
+        
+        // Apply the smoothed playback rate
+        if (Math.abs(currentPlaybackRate - audio.playbackRate) > 0.01) {
+            audio.playbackRate = currentPlaybackRate;
         }
         
-        .page.dragging {
-            cursor: grabbing;
-            z-index: 1000;
-        }
-
-        .page1 .page-front {
-            background: #e0e0e0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            border-radius: 15px;
-            z-index: 3;
-        }
-
-        .page1-logo {
-            max-width: 80%;
-            max-height: 80%;
-            object-fit: contain;
-        }
-
-        .page-front, .page-back {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            background: #e0e0e0;
-            border-radius: 15px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            backface-visibility: hidden;
-        }
-
-        .page-back {
-            transform: rotateY(180deg);
-            position: relative;
-        }
-
-        .soundcard-img {
-            max-width: 40%;
-            height: auto;
-        }
-
-        .page1 {
-            transform-origin: left center;
-            transition: transform 0.8s ease-out;
-            z-index: 3;
-        }
-
-        .page1.flipped {
-            transform: rotateY(-180deg);
-            z-index: 1;
-        }
-
-        .page1.flipped .page-back {
-            pointer-events: auto;
-            cursor: grab;
-        }
-
-        .page1.flipped .page-back:active {
-            cursor: grabbing;
-        }
-
-        .page3 {
-            z-index: 2;
-            transform: translateZ(-6px);
-        }
-
-        .buttons-container {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            display: flex;
-            flex-direction: column;
-            gap: 40px;
-            z-index: 2;
-            align-items: center;
-        }
-
-        .btn {
-            background: none;
-            border: none;
-            font-family: 'Apple Garamond', serif;
-            font-size: 48px;
-            color: #333;
-            cursor: url('cursorhover.png') 16 16, pointer;
-            text-decoration: none;
-        }
-
-        .btn:hover {
-            color: #000;
-            text-decoration: underline;
-        }
-
-        .music-particles {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 2;
-        }
-
-        .particle {
-            position: absolute;
-            font-size: 64px;
-            font-weight: bold;
-            pointer-events: none;
-            will-change: transform;
-        }
-
-        .swipe-hint {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            font-family: 'Apple Garamond', serif;
-            font-size: 24px;
-            color: #666;
-            opacity: 0;
-            transition: opacity 1s ease-in-out;
-            z-index: 1001;
-        }
-
-        .swipe-hint.show {
-            opacity: 1;
-        }
-
-        /* Audio control indicator */
-        .audio-control-info {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            font-family: 'Apple Garamond', serif;
-            font-size: 18px;
-            color: #fff;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            z-index: 10;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 10px 15px;
-            border-radius: 5px;
-        }
-
-        .audio-control-info.show {
-            opacity: 0.8;
-        }
-
-        @media (max-width: 1200px) {
-            .pledge-text {
-                font-size: 2.5rem;
-            }
-            #allowSoundContainer {
-                width: 500px;
-                height: 500px;
-            }
-            .book {
-                width: 25vw;
-                height: 32.5vh;
-                min-width: 250px;
-                min-height: 325px;
-            }
-            .btn {
-                font-size: 40px;
-            }
-            .particle {
-                font-size: 56px;
-            }
-            .soundcard-img {
-                max-width: 45%;
-            }
-        }
-
-        @media (max-width: 800px) {
-            .banner-container {
-                flex-direction: column;
-                padding: 5% 2%;
-            }
-            .pledge-text {
-                font-size: 2rem;
-                margin-bottom: 2rem;
-            }
-            #allowSoundContainer {
-                width: 400px;
-                height: 400px;
-            }
-            .book {
-                width: 35vw;
-                height: 35vh;
-                min-width: 200px;
-                min-height: 250px;
-            }
-            .btn {
-                font-size: 32px;
-                gap: 30px;
-            }
-            .particle {
-                font-size: 48px;
-            }
-            .soundcard-img {
-                max-width: 50%;
-            }
-        }
-    </style>
-</head>
-<body>
-    <!-- Interactive Banner -->
-    <div id="banner">
-        <div class="banner-container">
-            <div class="banner-left">
-                <div id="allowSoundContainer">
-                    <canvas id="drawingCanvas"></canvas>
-                    <img id="allowSoundImg" src="allowsound.png" alt="Allow Sound">
-                </div>
-            </div>
-            <div class="banner-right">
-                <p class="pledge-text">Sign the sound pledge to join:<br>KLUB ZAPROSZENIE</p>
-            </div>
-        </div>
-        <img id="armCursor" src="arm.png" alt="Arm Cursor">
-    </div>
-
-    <!-- Main Content -->
-    <div id="mainContent">
-        <!-- Audio control info -->
-        <div class="audio-control-info" id="audioControlInfo">
-            Speed: <span id="speedDisplay">1.0x</span> | Delay: <span id="delayDisplay">0ms</span>
-        </div>
-
-        <!-- Duże, losowe logo w tle -->
-        <img id="bigLogoBg" src="" alt="Duże Logo">
-
-        <div class="book-container">
-            <!-- Napis 'swipe to open' wewnątrz książeczki, w prawym dolnym rogu okładki -->
-            <div class="swipe-hint" id="swipeHint">swipe to open</div>
-
-            <div class="book" id="book">
-                <div class="page page1" id="page1">
-                    <div class="page-front">
-                        <img src="" alt="Logo" class="page1-logo" id="randomLogo">
-                    </div>
-                    <div class="page-back" id="page1Back">
-                        <img src="speaker.png" alt="Speaker" class="soundcard-img" id="speakerImg">
-                    </div>
-                </div>
-
-                <div class="page page3" id="page3">
-                    <div class="page-front">
-                        <!-- Dodatkowa treść drugiej strony, jeśli potrzeba -->
-                    </div>
-                </div>
-
-                <div class="buttons-container" id="buttonsContainer">
-                    <button class="btn" onclick="handleButtonClick('archive')">Archive</button>
-                    <button class="btn" onclick="handleButtonClick('latest')">Latest</button>
-                    <button class="btn" onclick="handleButtonClick('about')">About</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="music-particles" id="musicParticles"></div>
-    </div>
-
-    <script>
-        // Banner functionality
-        const banner = document.getElementById('banner');
-        const armCursor = document.getElementById('armCursor');
-        const drawingCanvas = document.getElementById('drawingCanvas');
-        const ctx = drawingCanvas.getContext('2d');
-        const allowSoundContainer = document.getElementById('allowSoundContainer');
-        const mainContent = document.getElementById('mainContent');
-
-        let isDrawing = false;
-        let hasDrawn = false;
-        let transitionStarted = false;
-        let audioPermissionGranted = false;
-
-        // Set canvas size
-        function resizeDrawingCanvas() {
-            const rect = allowSoundContainer.getBoundingClientRect();
-            drawingCanvas.width = rect.width;
-            drawingCanvas.height = rect.height;
-        }
-        resizeDrawingCanvas();
-        window.addEventListener('resize', resizeDrawingCanvas);
-
-        // Hide default cursor in banner
-        banner.style.cursor = 'none';
-
-        // Track mouse movement for arm cursor
-        document.addEventListener('mousemove', (e) => {
-            if (!transitionStarted) {
-                armCursor.style.left = e.clientX + 'px';
-                armCursor.style.top = e.clientY + 'px';
-            }
-        });
-
-        // Drawing functionality
-        function startDrawing(e) {
-            const rect = drawingCanvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
+        // Smooth interpolation for delay time
+        if (delayNode) {
+            currentDelayTime += (targetDelayTime - currentDelayTime) * smoothingFactor;
             
-            if (x >= 0 && x <= rect.width && y >= 0 && y <= rect.height) {
-                isDrawing = true;
-                ctx.beginPath();
-                ctx.moveTo(x, y);
-                ctx.strokeStyle = 'rgba(0, 0, 0, 0.9)';
-                ctx.lineWidth = 30;
-                ctx.lineCap = 'round';
-                ctx.lineJoin = 'round';
+            // Apply the smoothed delay time
+            if (Math.abs(currentDelayTime - delayNode.delayTime.value) > 0.001) {
+                delayNode.delayTime.setValueAtTime(currentDelayTime, audioContext.currentTime);
+            }
+        }
+        
+        // Update display
+        speedDisplay.textContent = currentPlaybackRate.toFixed(2) + 'x';
+        delayDisplay.textContent = Math.round(currentDelayTime * 1000) + 'ms';
+    }
+    
+    requestAnimationFrame(updateAudioSmooth);
+}
+updateAudioSmooth();
+
+// Śledzenie ruchu myszy - updated for position-based control
+document.addEventListener('mousemove', (e) => {
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+    
+    if (isFlipped && permissionGranted && !audio.paused) {
+        // Y-axis controls playback speed (0.5x to 2.0x)
+        // Top of screen = 2.0x, Bottom = 0.5x
+        const yRatio = mouseY / window.innerHeight;
+        targetPlaybackRate = 2.0 - (yRatio * 1.5); // 2.0 at top, 0.5 at bottom
+        targetPlaybackRate = Math.max(0.5, Math.min(2.0, targetPlaybackRate));
+        
+        // X-axis controls delay time (0ms to 3000ms)
+        // Left side = 0ms, Right side = 3000ms
+        const xRatio = mouseX / window.innerWidth;
+        targetDelayTime = xRatio * 3.0; // 0 to 3 seconds
+        targetDelayTime = Math.max(0, Math.min(3.0, targetDelayTime));
+        
+        // Show control info when audio is playing
+        audioControlInfo.classList.add('show');
+    }
+});
+
+// Update the flipPage function to show audio controls:
+function flipPage() {
+    isFlipped = true;
+    currentRotation = -180;
+    page1.classList.add('flipped');
+    page1.style.transform = 'rotateY(-180deg)';
+    page1.style.zIndex = '1';
+    
+    hideSwipeHint();
+    clearTimeout(hintTimeout);
+    
+    // Reset audio parameters for smooth start
+    targetPlaybackRate = 1.0;
+    currentPlaybackRate = 1.0;
+    targetDelayTime = 0;
+    currentDelayTime = 0;
+    audio.preservesPitch = false;
+    audio.currentTime = 0;
+    
+    // Enhanced audio playing with multiple fallbacks
+    const playAudio = () => {
+        // Resume AudioContext if needed
+        if (audioContext && audioContext.state === 'suspended') {
+            audioContext.resume();
+        }
+        
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+            playPromise.then(() => {
+                console.log('Audio playing successfully');
+                permissionGranted = true;
                 
-                // Unlock audio on drawing (especially important for mobile)
-                if (!audioPermissionGranted) {
-                    // Create a silent audio to unlock permissions
-                    const silentAudio = new Audio();
-                    silentAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQQAAAAAAAAAAAEA';
-                    silentAudio.play().then(() => {
-                        silentAudio.pause();
-                        audioPermissionGranted = true;
-                        console.log('Audio permissions unlocked via banner');
-                    }).catch(() => {
-                        console.log('Audio unlock attempt failed');
-                    });
-                }
-            }
-        }
-
-        function draw(e) {
-            if (!isDrawing) return;
-            
-            const rect = drawingCanvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            
-            ctx.lineTo(x, y);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(x, y);
-            
-            if (!hasDrawn) {
-                hasDrawn = true;
-                setTimeout(startTransition, 500); // Start transition after a short delay
-            }
-        }
-
-        function stopDrawing() {
-            isDrawing = false;
-        }
-
-        drawingCanvas.addEventListener('mousedown', startDrawing);
-        document.addEventListener('mousemove', draw);
-        document.addEventListener('mouseup', stopDrawing);
-
-        // Touch support for drawing
-        drawingCanvas.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            const touch = e.touches[0];
-            const mouseEvent = new MouseEvent('mousedown', {
-                clientX: touch.clientX,
-                clientY: touch.clientY
-            });
-            drawingCanvas.dispatchEvent(mouseEvent);
-        });
-
-        drawingCanvas.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-            const touch = e.touches[0];
-            const mouseEvent = new MouseEvent('mousemove', {
-                clientX: touch.clientX,
-                clientY: touch.clientY
-            });
-            document.dispatchEvent(mouseEvent);
-        });
-
-        drawingCanvas.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            const mouseEvent = new MouseEvent('mouseup', {});
-            document.dispatchEvent(mouseEvent);
-        });
-
-        // Transition to main content
-        function startTransition() {
-            if (transitionStarted) return;
-            transitionStarted = true;
-            
-            // Hide arm cursor
-            armCursor.style.display = 'none';
-            
-            // Simple fade transition
-            banner.style.transition = 'opacity 1s ease-out';
-            banner.style.opacity = '0';
-            
-            setTimeout(() => {
-                banner.style.display = 'none';
-                mainContent.classList.add('visible');
-                initMainPage();
-            }, 1000);
-        }
-
-        // Initialize main page functionality
-        function initMainPage() {
-            // Lista plików z logo (te same, co na książeczce)
-            const logoFiles = ['KZ1.png', 'KZ2.png', 'KZ3.png', 'KZ4.png', 'KZ5.png', 'KZ6.png'];
-
-            let isDragging = false;
-            let startX = 0;
-            let currentRotation = 0;
-            let isFlipped = false;
-            let particleInterval;
-            let extraParticleInterval;
-            // Initialize with permission already granted from banner
-            let permissionGranted = audioPermissionGranted;
-            let hintTimeout;
-
-            // Zmienne do śledzenia ruchu kursora
-            let mouseX = 0;
-            let mouseY = 0;
-
-            const audio = new Audio('muza.mp3');
-            audio.loop = true;
-            
-            // Create AudioContext and nodes for smooth audio control
-            let audioContext;
-            let source;
-            let gainNode;
-            let analyser;
-            let delayNode;
-            let feedbackGain;
-            let wetGain;
-            let dryGain;
-            
-            // Smoothing variables
-            let targetPlaybackRate = 1.0;
-            let currentPlaybackRate = 1.0;
-            let targetDelayTime = 0;
-            let currentDelayTime = 0;
-            const smoothingFactor = 0.05; // How quickly to interpolate
-            
-            // Audio control display elements
-            const audioControlInfo = document.getElementById('audioControlInfo');
-            const speedDisplay = document.getElementById('speedDisplay');
-            const delayDisplay = document.getElementById('delayDisplay');
-            
-            try {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                
-                // Create nodes
-                source = audioContext.createMediaElementSource(audio);
-                gainNode = audioContext.createGain();
-                analyser = audioContext.createAnalyser();
-                
-                // Create delay effect chain
-                delayNode = audioContext.createDelay(3.0); // Max 3 seconds delay
-                feedbackGain = audioContext.createGain();
-                wetGain = audioContext.createGain();
-                dryGain = audioContext.createGain();
-                
-                // Set initial values
-                delayNode.delayTime.value = 0;
-                feedbackGain.gain.value = 0.4; // Feedback amount (0-1)
-                wetGain.gain.value = 0.3; // Wet signal level
-                dryGain.gain.value = 1.0; // Dry signal level
-                
-                // Connect nodes for delay effect
-                // Dry path: source -> dryGain -> gainNode
-                source.connect(dryGain);
-                dryGain.connect(gainNode);
-                
-                // Wet path: source -> delayNode -> feedbackGain -> delayNode (feedback loop)
-                //                                -> wetGain -> gainNode
-                source.connect(delayNode);
-                delayNode.connect(feedbackGain);
-                feedbackGain.connect(delayNode); // Feedback loop
-                delayNode.connect(wetGain);
-                wetGain.connect(gainNode);
-                
-                // Final output chain
-                gainNode.connect(analyser);
-                analyser.connect(audioContext.destination);
-                
-                // Set initial gain
-                gainNode.gain.value = 1.0;
-            } catch (e) {
-                console.log('Web Audio API not supported:', e);
-            }
-            
-            // Smooth audio update loop
-            function updateAudioSmooth() {
-                if (isFlipped && !audio.paused) {
-                    // Smooth interpolation for playback rate
-                    currentPlaybackRate += (targetPlaybackRate - currentPlaybackRate) * smoothingFactor;
-                    
-                    // Apply the smoothed playback rate
-                    if (Math.abs(currentPlaybackRate - audio.playbackRate) > 0.01) {
-                        audio.playbackRate = currentPlaybackRate;
-                    }
-                    
-                    // Smooth interpolation for delay time
-                    if (delayNode) {
-                        currentDelayTime += (targetDelayTime - currentDelayTime) * smoothingFactor;
-                        
-                        // Apply the smoothed delay time
-                        if (Math.abs(currentDelayTime - delayNode.delayTime.value) > 0.001) {
-                            delayNode.delayTime.setValueAtTime(currentDelayTime, audioContext.currentTime);
-                        }
-                    }
-                    
-                    // Update display
-                    speedDisplay.textContent = currentPlaybackRate.toFixed(2) + 'x';
-                    delayDisplay.textContent = Math.round(currentDelayTime * 1000) + 'ms';
+                // Fade in the audio smoothly
+                if (gainNode) {
+                    gainNode.gain.setValueAtTime(0.01, audioContext.currentTime);
+                    gainNode.gain.linearRampToValueAtTime(1.0, audioContext.currentTime + 0.5);
                 }
                 
-                requestAnimationFrame(updateAudioSmooth);
-            }
-            updateAudioSmooth();
-
-            const page1 = document.getElementById('page1');
-            const musicParticles = document.getElementById('musicParticles');
-            const book = document.getElementById('book');
-            const swipeHint = document.getElementById('swipeHint');
-            const randomLogo = document.getElementById('randomLogo');
-            const bigLogoBg = document.getElementById('bigLogoBg');
-            const speakerImg = document.getElementById('speakerImg');
-
-            // Offscreen canvas do pobierania pikseli tła
-            const offCanvas = document.createElement('canvas');
-            const offCtx = offCanvas.getContext('2d');
-
-            // Śledzenie ruchu myszy - updated for position-based control
-            document.addEventListener('mousemove', (e) => {
-                mouseX = e.clientX;
-                mouseY = e.clientY;
+                // Show audio control info
+                audioControlInfo.classList.add('show');
+            }).catch(err => {
+                console.log('Audio play failed:', err);
                 
-                if (isFlipped && permissionGranted && !audio.paused) {
-                    // Y-axis controls playback speed (0.5x to 2.0x)
-                    // Top of screen = 2.0x, Bottom = 0.5x
-                    const yRatio = mouseY / window.innerHeight;
-                    targetPlaybackRate = 2.0 - (yRatio * 1.5); // 2.0 at top, 0.5 at bottom
-                    targetPlaybackRate = Math.max(0.5, Math.min(2.0, targetPlaybackRate));
-                    
-                    // X-axis controls delay time (0ms to 3000ms)
-                    // Left side = 0ms, Right side = 3000ms
-                    const xRatio = mouseX / window.innerWidth;
-                    targetDelayTime = xRatio * 3.0; // 0 to 3 seconds
-                    targetDelayTime = Math.max(0, Math.min(3.0, targetDelayTime));
-                    
-                    // Show control info when audio is playing
-                    audioControlInfo.classList.add('show');
-                }
-            });
-
-            function resizeCanvas() {
-                offCanvas.width = window.innerWidth;
-                offCanvas.height = window.innerHeight;
-                drawBgToCanvas();
-            }
-
-            function drawBgToCanvas() {
-                if (!bigLogoBg.complete) return;
-                offCtx.clearRect(0, 0, offCanvas.width, offCanvas.height);
-                offCtx.drawImage(bigLogoBg, 0, 0, offCanvas.width, offCanvas.height);
-            }
-
-            bigLogoBg.addEventListener('load', () => {
-                resizeCanvas();
-            });
-
-            window.addEventListener('resize', () => {
-                resizeCanvas();
-            });
-
-            function setRandomLogo() {
-                const idx = Math.floor(Math.random() * logoFiles.length);
-                const chosen = logoFiles[idx];
-                randomLogo.src = chosen;
-                bigLogoBg.src = chosen;
-            }
-            setRandomLogo();
-
-            function getSpeakerPosition() {
-                const speakerRect = speakerImg.getBoundingClientRect();
-                return {
-                    x: speakerRect.left + speakerRect.width / 2,
-                    y: speakerRect.top + speakerRect.height / 2
-                };
-            }
-
-            function createMusicParticle() {
-                if (!isFlipped) return;
-                
-                const particle = document.createElement('div');
-                particle.classList.add('particle');
-                const noteEmojis = ['♪', '♫', '♩', '♬', '𝄞', '𝄢'];
-                particle.textContent = noteEmojis[Math.floor(Math.random() * noteEmojis.length)];
-                
-                const speakerPos = getSpeakerPosition();
-                const offsetX = (Math.random() - 0.5) * 20;
-                const offsetY = (Math.random() - 0.5) * 20;
-                const startX = speakerPos.x + offsetX;
-                const startY = speakerPos.y + offsetY;
-
-                particle.style.position = 'absolute';
-                particle.style.left = startX + 'px';
-                particle.style.top = startY + 'px';
-
-                let r, g, b;
-                try {
-                    const data = offCtx.getImageData(Math.floor(startX), Math.floor(startY), 1, 1).data;
-                    [r, g, b] = data;
-                } catch {
-                    r = g = b = 0;
-                }
-                const brightness = (r + g + b) / 3;
-                particle.style.color = brightness > 128 ? '#000' : '#fff';
-
-                musicParticles.appendChild(particle);
-                
-                // Calmer trajectory to cursor
-                const targetX = mouseX;
-                const targetY = mouseY;
-                
-                const deltaX = targetX - startX;
-                const deltaY = targetY - startY;
-                const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-                
-                // Gentle whirlpool parameters
-                const spiralRadius = 30 + Math.random() * 20; // Smaller, consistent radius
-                const rotations = 1.5 + Math.random() * 0.5; // Fewer rotations
-                
-                // Consistent speed - faster
-                const duration = 1200 + Math.random() * 800; // 1.2-2 seconds (faster than before)
-                
-                const keyframes = [];
-                const steps = 30;
-                
-                for (let i = 0; i <= steps; i++) {
-                    const progress = i / steps;
-                    const easeProgress = 1 - Math.pow(1 - progress, 2); // Ease-out
-                    
-                    // Gentle spiral
-                    const angle = rotations * 2 * Math.PI * progress;
-                    const currentRadius = spiralRadius * (1 - progress * 0.8); // Gradually decreasing
-                    
-                    const spiralX = Math.cos(angle) * currentRadius;
-                    const spiralY = Math.sin(angle) * currentRadius;
-                    
-                    // Smooth movement toward cursor
-                    const mainX = deltaX * easeProgress;
-                    const mainY = deltaY * easeProgress;
-                    
-                    // Gentle rotation
-                    const rotation = angle * 180 / Math.PI;
-                    
-                    keyframes.push({
-                        transform: `translate(${mainX + spiralX}px, ${mainY + spiralY}px) rotate(${rotation}deg)`,
-                        opacity: 1, // No fade - constant opacity
-                        offset: progress
-                    });
-                }
-                
-                particle.animate(keyframes, {
-                    duration: duration,
-                    easing: 'linear'
-                });
-                
-                setTimeout(() => {
-                    if (particle.parentNode) {
-                        musicParticles.removeChild(particle);
-                    }
-                }, duration);
-            }
-
-            function startMusicParticles() {
-                stopMusicParticles();
-                
-                particleInterval = setInterval(() => {
-                    createMusicParticle();
-                }, 120);
-                
-                extraParticleInterval = setInterval(() => {
-                    if (Math.random() > 0.3) {
-                        createMusicParticle();
-                    }
-                }, 80);
-            }
-
-            function stopMusicParticles() {
-                if (particleInterval) {
-                    clearInterval(particleInterval);
-                    particleInterval = null;
-                }
-                
-                if (extraParticleInterval) {
-                    clearInterval(extraParticleInterval);
-                    extraParticleInterval = null;
-                }
-                
-                const existingParticles = musicParticles.querySelectorAll('.particle');
-                existingParticles.forEach(particle => {
-                    if (particle.parentNode) {
-                        musicParticles.removeChild(particle);
-                    }
-                });
-            }
-
-            // Audio unlock function
-            function unlockAudio() {
+                // If failed, try to unlock on next interaction
                 if (!permissionGranted) {
-                    // Resume AudioContext if suspended
-                    if (audioContext && audioContext.state === 'suspended') {
-                        audioContext.resume();
-                    }
-                    
-                    // Try to play and immediately pause to unlock
-                    const playPromise = audio.play();
-                    if (playPromise !== undefined) {
-                        playPromise.then(() => {
-                            audio.pause();
-                            audio.currentTime = 0;
-                            permissionGranted = true;
-                            console.log('Audio unlocked successfully');
-                        }).catch(err => {
-                            console.log('Audio unlock failed:', err);
-                        });
-                    }
+                    const retryPlay = () => {
+                        audio.play().catch(e => console.log('Retry failed:', e));
+                        document.removeEventListener('click', retryPlay);
+                        document.removeEventListener('touchend', retryPlay);
+                    };
+                    document.addEventListener('click', retryPlay, { once: true });
+                    document.addEventListener('touchend', retryPlay, { once: true });
                 }
-            }
-
-            // Try to unlock audio on any user interaction
-            ['click', 'touchstart', 'touchend', 'mousedown'].forEach(eventType => {
-                document.addEventListener(eventType, unlockAudio, { once: true });
             });
-
-            // Specific unlock when clicking the book
-            book.addEventListener('click', unlockAudio);
-            book.addEventListener('touchstart', unlockAudio);
-
-            function showSwipeHint() {
-                if (!isFlipped) {
-                    swipeHint.classList.add('show');
-                }
-            }
-
-            function hideSwipeHint() {
-                swipeHint.classList.remove('show');
-            }
-
-            function resetHintTimer() {
-                clearTimeout(hintTimeout);
-                hideSwipeHint();
-                if (!isFlipped) {
-                    hintTimeout = setTimeout(showSwipeHint, 3000);
-                }
-            }
-
-            resetHintTimer();
-
-            document.addEventListener('mousedown', startDrag);
-            document.addEventListener('touchstart', handleTouchStart, { passive: false });
-
-            function startDrag(e) {
-                resetHintTimer();
-                
-                if (e.target.classList.contains('btn')) {
-                    return;
-                }
-                
-                const bookRect = book.getBoundingClientRect();
-                const clickX = (e.type === 'touchstart') ? e.touches[0].clientX : e.clientX;
-                const clickY = (e.type === 'touchstart') ? e.touches[0].clientY : e.clientY;
-                const relativeX = clickX - bookRect.left;
-                const relativeY = clickY - bookRect.top;
-                const bookWidth = bookRect.width;
-                const bookHeight = bookRect.height;
-                
-                const inBookArea = relativeX >= 0 && relativeX <= bookWidth && relativeY >= 0 && relativeY <= bookHeight;
-                const inFlippedArea = isFlipped && relativeX < 0 && relativeX > -bookWidth && relativeY > 0 && relativeY < bookHeight;
-                
-                let shouldReact = false;
-                if (!isFlipped && inBookArea) {
-                    shouldReact = true;
-                } else if (isFlipped && (inBookArea || inFlippedArea)) {
-                    shouldReact = true;
-                }
-                if (!shouldReact) return;
-                
-                e.preventDefault();
-                e.stopPropagation();
-                
-                isDragging = true;
-                startX = clickX;
-                page1.classList.add('dragging');
-                page1.style.transition = 'none';
-                
-                document.addEventListener('mousemove', drag);
-                document.addEventListener('mouseup', endDrag);
-                document.addEventListener('touchmove', handleTouchMove, { passive: false });
-                document.addEventListener('touchend', handleTouchEnd);
-            }
-
-            function drag(e) {
-                if (!isDragging) return;
-                
-                const clientX = (e.type === 'touchmove') ? e.touches[0].clientX : e.clientX;
-                const deltaX = clientX - startX;
-                const sensitivity = 0.8;
-                let rotation;
-                
-                if (isFlipped) {
-                    rotation = Math.max(-180, Math.min(0, -180 + deltaX * sensitivity));
-                } else {
-                    rotation = Math.max(-180, Math.min(0, deltaX * sensitivity));
-                }
-                
-                page1.style.transform = `rotateY(${rotation}deg)`;
-            }
-
-            function endDrag(e) {
-                if (!isDragging) return;
-                
-                isDragging = false;
-                page1.classList.remove('dragging');
-                page1.style.transition = 'transform 0.8s ease-out';
-                
-                const clientX = (e.type === 'touchend' && e.changedTouches) ? e.changedTouches[0].clientX : e.clientX;
-                const deltaX = clientX - startX;
-                const threshold = 60;
-                
-                if (deltaX < -threshold && !isFlipped) {
-                    flipPage();
-                } else if (deltaX > threshold && isFlipped) {
-                    unflipPage();
-                } else {
-                    resetPage();
-                }
-                
-                document.removeEventListener('mousemove', drag);
-                document.removeEventListener('mouseup', endDrag);
-                document.removeEventListener('touchmove', handleTouchMove);
-                document.removeEventListener('touchend', handleTouchEnd);
-            }
-
-            function handleTouchStart(e) {
-                e.preventDefault();
-                startDrag(e);
-            }
-
-            function handleTouchMove(e) {
-                e.preventDefault();
-                drag(e);
-            }
-
-            function handleTouchEnd(e) {
-                e.preventDefault();
-                endDrag(e);
-            }
-
-            function flipPage() {
-                isFlipped = true;
-                currentRotation = -180;
-                page1.classList.add('flipped');
-                page1.style.transform = 'rotateY(-180deg)';
-                page1.style.zIndex = '1';
-                
-                hideSwipeHint();
-                clearTimeout(hintTimeout);
-                
-                // Reset audio parameters for smooth start
-                targetPlaybackRate = 1.0;
-                currentPlaybackRate = 1.0;
-                targetDelayTime = 0;
-                currentDelayTime = 0;
-                audio.preservesPitch = false;
-                audio.currentTime = 0;
-                
-                // Enhanced audio playing with multiple fallbacks
-                const playAudio = () => {
-                    // Resume AudioContext if needed
-                    if (audioContext && audioContext.state === 'suspended') {
-                        audioContext.resume();
-                    }
-                    
-                    const playPromise = audio.play();
-                    if (playPromise !== undefined) {
-                        playPromise.then(() => {
-                            console.log('Audio playing successfully');
-                            permissionGranted = true;
-                            
-                            // Fade in the audio smoothly
-                            if (gainNode) {
-                                gainNode.gain.setValueAtTime(0.01, audioContext.currentTime);
-                                gainNode.gain.linearRampToValueAtTime(1.0, audioContext.currentTime + 0.5);
-                            }
-                            
-                            // Show audio control info
-                            audioControlInfo.classList.add('show');
-                        }).catch(err => {
-                            console.log('Audio play failed:', err);
-                            
-                            // If failed, try to unlock on next interaction
-                            if (!permissionGranted) {
-                                const retryPlay = () => {
-                                    audio.play().catch(e => console.log('Retry failed:', e));
-                                    document.removeEventListener('click', retryPlay);
-                                    document.removeEventListener('touchend', retryPlay);
-                                };
-                                document.addEventListener('click', retryPlay, { once: true });
-                                document.addEventListener('touchend', retryPlay, { once: true });
-                            }
-                        });
-                    }
-                };
-                
-                // Try to play immediately
-                playAudio();
-                
-                // Also try after a small delay (helps on some mobile browsers)
-                setTimeout(playAudio, 100);
-                
-                startMusicParticles();
-            }
-
-            function unflipPage() {
-                isFlipped = false;
-                currentRotation = 0;
-                page1.classList.remove('flipped');
-                page1.style.transform = 'rotateY(0deg)';
-                page1.style.zIndex = '3';
-                
-                resetHintTimer();
-                
-                // Hide audio control info
-                audioControlInfo.classList.remove('show');
-                
-                audio.pause();
-                audio.playbackRate = 1.0;
-                if (delayNode) {
-                    delayNode.delayTime.value = 0;
-                }
-                stopMusicParticles();
-            }
-
-            function resetPage() {
-                const targetRotation = isFlipped ? -180 : 0;
-                page1.style.transition = 'transform 0.6s ease-out';
-                page1.style.transform = `rotateY(${targetRotation}deg)`;
-                setTimeout(() => {
-                    page1.style.transition = '';
-                }, 600);
-            }
-
-            window.handleButtonClick = function(action) {
-                switch(action) {
-                    case 'archive':
-                        window.open('https://radiokapital.pl/search/?s=klub%20zaproszenie', '_blank');
-                        break;
-                    case 'latest':
-                        window.open('https://www.instagram.com/klub_zaproszenie/', '_blank');
-                        break;
-                    case 'about':
-                        alert('O aplikacji...');
-                        break;
-                }
-            }
         }
+    };
+    
+    // Try to play immediately
+    playAudio();
+    
+    // Also try after a small delay (helps on some mobile browsers)
+    setTimeout(playAudio, 100);
+    
+    startMusicParticles();
+}
+
+// Update the unflipPage function to hide audio controls:
+function unflipPage() {
+    isFlipped = false;
+    currentRotation = 0;
+    page1.classList.remove('flipped');
+    page1.style.transform = 'rotateY(0deg)';
+    page1.style.zIndex = '3';
+    
+    resetHintTimer();
+    
+    // Hide audio control info
+    audioControlInfo.classList.remove('show');
+    
+    audio.pause();
+    audio.playbackRate = 1.0;
+    if (delayNode) {
+        delayNode.delayTime.value = 0;
+    }
+    stopMusicParticles();
+}
