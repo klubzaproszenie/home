@@ -95,16 +95,6 @@
             z-index: 2;
         }
 
-        #armCursor {
-            position: fixed;
-            width: 100px;
-            height: 100px;
-            pointer-events: none;
-            z-index: 10001;
-            transform: translate(-50%, -50%);
-            transition: none;
-        }
-
         /* Main page styles (unchanged) */
         html, body {
             cursor: url('cursor1.png') 16 16, auto;
@@ -395,7 +385,6 @@
                 <p class="pledge-text">Sign the sound pledge to join:<br>KLUB ZAPROSZENIE</p>
             </div>
         </div>
-        <img id="armCursor" src="arm.png" alt="Arm Cursor">
     </div>
 
     <!-- Main Content -->
@@ -437,7 +426,6 @@
     <script>
         // Banner functionality
         const banner = document.getElementById('banner');
-        const armCursor = document.getElementById('armCursor');
         const drawingCanvas = document.getElementById('drawingCanvas');
         const ctx = drawingCanvas.getContext('2d');
         const allowSoundContainer = document.getElementById('allowSoundContainer');
@@ -456,17 +444,6 @@
         }
         resizeDrawingCanvas();
         window.addEventListener('resize', resizeDrawingCanvas);
-
-        // Hide default cursor in banner
-        banner.style.cursor = 'none';
-
-        // Track mouse movement for arm cursor
-        document.addEventListener('mousemove', (e) => {
-            if (!transitionStarted) {
-                armCursor.style.left = e.clientX + 'px';
-                armCursor.style.top = e.clientY + 'px';
-            }
-        });
 
         // Drawing functionality
         function startDrawing(e) {
@@ -556,9 +533,6 @@
         function startTransition() {
             if (transitionStarted) return;
             transitionStarted = true;
-            
-            // Hide arm cursor
-            armCursor.style.display = 'none';
             
             // Simple fade transition
             banner.style.transition = 'opacity 1s ease-out';
