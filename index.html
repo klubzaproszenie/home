@@ -273,11 +273,23 @@
             color: #333;
             cursor: url('cursorhover.png') 16 16, pointer;
             text-decoration: none;
+            padding: 10px 20px; /* Add some padding for better touch targets */
+            border-radius: 5px; /* Optional: add slight border radius */
+            transition: color 0.2s ease; /* Smooth color transition */
         }
 
         .btn:hover {
             color: #000;
             text-decoration: underline;
+        }
+
+        /* Mobile-specific button styles */
+        @media (max-width: 800px) {
+            .btn {
+                font-size: 32px;
+                padding: 15px 25px; /* Larger touch targets on mobile */
+                margin: 5px 0; /* Add some margin for spacing */
+            }
         }
 
         .music-particles {
@@ -898,220 +910,3 @@
 
             function hideSwipeHint() {
                 swipeHint.classList.remove('show');
-            }
-
-            function resetHintTimer() {
-                clearTimeout(hintTimeout);
-                hideSwipeHint();
-                if (!isFlipped) {
-                    hintTimeout = setTimeout(showSwipeHint, 3000);
-                }
-            }
-
-            resetHintTimer();
-
-            document.addEventListener('mousedown', startDrag);
-            document.addEventListener('touchstart', handleTouchStart, { passive: false });
-
-            function startDrag(e) {
-                resetHintTimer();
-                
-                if (e.target.classList.contains('btn')) {
-                    return;
-                }
-                
-                const bookRect = book.getBoundingClientRect();
-                const clickX = (e.type === 'touchstart') ? e.touches[0].clientX : e.clientX;
-                const clickY = (e.type === 'touchstart') ? e.touches[0].clientY : e.clientY;
-                const relativeX = clickX - bookRect.left;
-                const relativeY = clickY - bookRect.top;
-                const bookWidth = bookRect.width;
-                const bookHeight = bookRect.height;
-                
-                const inBookArea = relativeX >= 0 && relativeX <= bookWidth && relativeY >= 0 && relativeY <= bookHeight;
-                const inFlippedArea = isFlipped && relativeX < 0 && relativeX > -bookWidth && relativeY > 0 && relativeY < bookHeight;
-                
-                let shouldReact = false;
-                if (!isFlipped && inBookArea) {
-                    shouldReact = true;
-                } else if (isFlipped && (inBookArea || inFlippedArea)) {
-                    shouldReact = true;
-                }
-                if (!shouldReact) return;
-                
-                e.preventDefault();
-                e.stopPropagation();
-                
-                isDragging = true;
-                startX = clickX;
-                page1.classList.add('dragging');
-                page1.style.transition = 'none';
-                
-                document.addEventListener('mousemove', drag);
-                document.addEventListener('mouseup', endDrag);
-                document.addEventListener('touchmove', handleTouchMove, { passive: false });
-                document.addEventListener('touchend', handleTouchEnd);
-            }
-
-            function drag(e) {
-                if (!isDragging) return;
-                
-                const clientX = (e.type === 'touchmove') ? e.touches[0].clientX : e.clientX;
-                const deltaX = clientX - startX;
-                const sensitivity = 0.8;
-                let rotation;
-                
-                if (isFlipped) {
-                    rotation = Math.max(-180, Math.min(0, -180 + deltaX * sensitivity));
-                } else {
-                    rotation = Math.max(-180, Math.min(0, deltaX * sensitivity));
-                }
-                
-                page1.style.transform = `rotateY(${rotation}deg)`;
-            }
-
-            function endDrag(e) {
-                if (!isDragging) return;
-                
-                isDragging = false;
-                page1.classList.remove('dragging');
-                page1.style.transition = 'transform 0.8s ease-out';
-                
-                const clientX = (e.type === 'touchend' && e.changedTouches) ? e.changedTouches[0].clientX : e.clientX;
-                const deltaX = clientX - startX;
-                const threshold = 60;
-                
-                if (deltaX < -threshold && !isFlipped) {
-                    flipPage();
-                } else if (deltaX > threshold && isFlipped) {
-                    unflipPage();
-                } else {
-                    resetPage();
-                }
-                
-                document.removeEventListener('mousemove', drag);
-                document.removeEventListener('mouseup', endDrag);
-                document.removeEventListener('touchmove', handleTouchMove);
-                document.removeEventListener('touchend', handleTouchEnd);
-            }
-
-            function handleTouchStart(e) {
-                e.preventDefault();
-                startDrag(e);
-            }
-
-            function handleTouchMove(e) {
-                e.preventDefault();
-                drag(e);
-            }
-
-            function handleTouchEnd(e) {
-                e.preventDefault();
-                endDrag(e);
-            }
-
-            function flipPage() {
-                isFlipped = true;
-                currentRotation = -180;
-                page1.classList.add('flipped');
-                page1.style.transform = 'rotateY(-180deg)';
-                page1.style.zIndex = '1';
-                
-                hideSwipeHint();
-                clearTimeout(hintTimeout);
-                
-                // Reset audio parameters for smooth start
-                targetPlaybackRate = 1.0;
-                currentPlaybackRate = 1.0;
-                targetDelayTime = 0;
-                currentDelayTime = 0;
-                audio.preservesPitch = false;
-                audio.currentTime = 0;
-                
-                // Enhanced audio playing with multiple fallbacks
-                const playAudio = () => {
-                    // Resume AudioContext if needed
-                    if (audioContext && audioContext.state === 'suspended') {
-                        audioContext.resume();
-                    }
-                    
-                    const playPromise = audio.play();
-                    if (playPromise !== undefined) {
-                        playPromise.then(() => {
-                            console.log('Audio playing successfully');
-                            permissionGranted = true;
-                            
-                            // Fade in the audio smoothly
-                            if (gainNode) {
-                                gainNode.gain.setValueAtTime(0.01, audioContext.currentTime);
-                                gainNode.gain.linearRampToValueAtTime(1.0, audioContext.currentTime + 0.5);
-                            }
-                        }).catch(err => {
-                            console.log('Audio play failed:', err);
-                            
-                            // If failed, try to unlock on next interaction
-                            if (!permissionGranted) {
-                                const retryPlay = () => {
-                                    audio.play().catch(e => console.log('Retry failed:', e));
-                                    document.removeEventListener('click', retryPlay);
-                                    document.removeEventListener('touchend', retryPlay);
-                                };
-                                document.addEventListener('click', retryPlay, { once: true });
-                                document.addEventListener('touchend', retryPlay, { once: true });
-                            }
-                        });
-                    }
-                };
-                
-                // Try to play immediately
-                playAudio();
-                
-                // Also try after a small delay (helps on some mobile browsers)
-                setTimeout(playAudio, 100);
-                
-                startMusicParticles();
-            }
-
-            function unflipPage() {
-                isFlipped = false;
-                currentRotation = 0;
-                page1.classList.remove('flipped');
-                page1.style.transform = 'rotateY(0deg)';
-                page1.style.zIndex = '3';
-                
-                resetHintTimer();
-                
-                audio.pause();
-                audio.playbackRate = 1.0;
-                if (delayNode) {
-                    delayNode.delayTime.value = 0;
-                }
-                stopMusicParticles();
-            }
-
-            function resetPage() {
-                const targetRotation = isFlipped ? -180 : 0;
-                page1.style.transition = 'transform 0.6s ease-out';
-                page1.style.transform = `rotateY(${targetRotation}deg)`;
-                setTimeout(() => {
-                    page1.style.transition = '';
-                }, 600);
-            }
-
-            window.handleButtonClick = function(action) {
-                switch(action) {
-                    case 'archive':
-                        window.open('https://radiokapital.pl/search/?s=klub%20zaproszenie', '_blank');
-                        break;
-                    case 'latest':
-                        window.open('https://www.instagram.com/klub_zaproszenie/', '_blank');
-                        break;
-                    case 'about':
-                        alert('Siemanko!');
-                        break;
-                }
-            }
-        }
-    </script>
-</body>
-</html>
